@@ -121,6 +121,12 @@ shrine_controls:
     .byte 0x82, 0xae, 0x20, 0x87, 0x93, 0x88, 0xc3, 0
 
 .balign 4
+.global shrine_palettes
+shrine_palettes:
+    # Background, selected row, heading, controls (RRGGBBAA).
+    .word 0x17233ef8, 0x42577fff, 0xfdd37dff, 0xd7def1ff # Male route
+    .word 0x39192ef8, 0x814364ff, 0xffc1dcff, 0xfddae9ff # Female route
+
 .global p3p_shrine_selection_state
 p3p_shrine_selection_state:
     .space 528

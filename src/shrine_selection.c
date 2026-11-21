@@ -29,10 +29,19 @@ typedef struct {
     uint8_t presented;
 } Selection;
 
+typedef struct {
+    uint32_t background;
+    uint32_t highlight;
+    uint32_t heading;
+    uint32_t controls;
+} ShrinePalette;
+
 _Static_assert(sizeof(Selection) <= 528, "Shrine selection exceeds its payload allocation");
 
 extern Selection p3p_shrine_selection_state;
+extern const ShrinePalette shrine_palettes[2];
 extern volatile uint32_t game_button_edges;
+extern int game_is_female_route(void);
 extern int game_get_flow_variable(int index);
 extern unsigned game_item_count(int item);
 extern const char *game_item_name(int item);
@@ -74,18 +83,19 @@ static void draw_card(unsigned item, int y)
 void p3p_shrine_draw_selection(void)
 {
     Selection *selection = &p3p_shrine_selection_state;
+    const ShrinePalette *palette = &shrine_palettes[game_is_female_route() != 0];
     if (selection->confirming) {
-        p3p_shrine_rect(0x17233ef8, 97, 84, 286, 105);
-        p3p_shrine_text(0xfdd37dff, 117, 97, shrine_confirm_title);
+        p3p_shrine_rect(palette->background, 97, 84, 286, 105);
+        p3p_shrine_text(palette->heading, 117, 97, shrine_confirm_title);
         draw_card(selection->cards[selection->cursor], 126);
-        p3p_shrine_text(0xd7def1ff, 117, 160, shrine_controls);
+        p3p_shrine_text(palette->controls, 117, 160, shrine_controls);
         selection->presented = 1;
         return;
     }
 
-    p3p_shrine_rect(0x17233ef8, 97, 24, 286, 224);
-    p3p_shrine_text(0xfdd37dff, 117, 35, shrine_list_title);
-    p3p_shrine_text(0xfdd37dff, 325, 35, shrine_quantity);
+    p3p_shrine_rect(palette->background, 97, 24, 286, 224);
+    p3p_shrine_text(palette->heading, 117, 35, shrine_list_title);
+    p3p_shrine_text(palette->heading, 325, 35, shrine_quantity);
     unsigned first_visible = selection->cursor / PAGE_ROWS * PAGE_ROWS;
     for (unsigned row = 0; row < PAGE_ROWS; ++row) {
         unsigned index = first_visible + row;
@@ -93,10 +103,10 @@ void p3p_shrine_draw_selection(void)
             break;
         int y = 61 + row * 19;
         if (index == selection->cursor)
-            p3p_shrine_rect(0x42577fff, 107, y - 3, 266, 19);
+            p3p_shrine_rect(palette->highlight, 107, y - 3, 266, 19);
         draw_card(selection->cards[index], y);
     }
-    p3p_shrine_text(0xd7def1ff, 117, 220, shrine_controls);
+    p3p_shrine_text(palette->controls, 117, 220, shrine_controls);
     selection->presented = 1;
 }
 

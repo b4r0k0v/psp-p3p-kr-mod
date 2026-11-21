@@ -17,6 +17,7 @@ GAMEPLAY_SYMBOLS := \
 	--defsym game_get_flow_variable=0xa2f8 \
 	--defsym game_item_count=0x9634 \
 	--defsym game_item_name=0xb4cc \
+	--defsym game_is_female_route=0x9718 \
 	--defsym game_button_edges=0x693948 \
 	--defsym game_time_us=0x37c7e0 \
 	--defsym game_prepare_rect=0x10cbf4 \
