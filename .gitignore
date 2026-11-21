@@ -1,0 +1,12 @@
+.venv/
+build/
+*.iso
+*.cso
+*.cpk
+*.pak
+*.prx
+*.elf
+*.bin
+docs/*
+reverse/*
+AGENTS.md
