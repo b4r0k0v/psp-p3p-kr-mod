@@ -172,7 +172,7 @@ def check_menu(runner):
     calls = {symbols['game_time_us']: game_time_us}
     row, state = symbols['menu_row'], symbols['menu_state']
     xp, money = symbols['p3p_xp_mode'], symbols['p3p_money_mode']
-    affinity, shrine = symbols['p3p_community_affinity_zero'], symbols['p3p_shrine_wait_zero']
+    affinity, shrine = symbols['p3p_community_affinity_zero'], symbols['p3p_shrine_wait_one_day']
     memory = {row: 2, state: 0, affinity: 0, shrine: 0, xp: 0, money: 0, 0x100018: 0}
 
     assert push(1) == 0x12888c and memory[row] == 0 and memory[state] == 1
@@ -226,10 +226,10 @@ def check_shrine(runner):
         regs[2], regs[29] = 1, regs[29] + 16
         return return_address
 
-    def exercise(enabled, index, days, *, count_id=94, valid_signature=True, caller=default_caller):
+    def exercise(enabled, index, counter, *, count_id=94, valid_signature=True, caller=default_caller):
         memory = {
-            context + 0x124: script, saved_count: days,
-            runner.symbols['p3p_shrine_wait_zero']: enabled,
+            context + 0x124: script, saved_count: counter,
+            runner.symbols['p3p_shrine_wait_one_day']: enabled,
         }
         memory.update({script + index * 4: word for index, word in signature.items()})
         if not valid_signature:
@@ -242,13 +242,13 @@ def check_shrine(runner):
             {runner.symbols['game_flow_get_variable_continue']: read_counter},
         )
         assert stop == caller and regs[29] == stack and regs[31] == link and regs[2] == 1
-        assert memory[saved_count] == days
+        assert memory[saved_count] == counter
         return memory[result]
 
     for index in (355, 360, 372):
-        for days in (0, 1, 2, 3, 4, 5, 6, 7, MASK):
-            assert exercise(0, index, days) == days
-            assert exercise(1, index, days) == (6 if 1 <= days <= 5 else days)
+        for counter in (0, 1, 2, 3, 4, 5, 6, 7, MASK):
+            assert exercise(1, index, counter) == (6 if 2 <= counter <= 5 else counter)
+            assert exercise(0, index, counter) == counter
         assert exercise(1, index, 2, count_id=93) == 2
         assert exercise(1, index, 2, valid_signature=False) == 2
         assert exercise(1, index, 2, caller=0x172820) == 2

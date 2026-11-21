@@ -15,8 +15,8 @@ p3p_community_affinity_hook:
 # of variable 94 in HIT_SCRIPT_03 control whether the card is collectible.
 .global p3p_shrine_wait_hook
 p3p_shrine_wait_hook:
-    lui $t0, %hi(p3p_shrine_wait_zero)
-    lw $t0, %lo(p3p_shrine_wait_zero)($t0)
+    lui $t0, %hi(p3p_shrine_wait_one_day)
+    lw $t0, %lo(p3p_shrine_wait_one_day)($t0)
     beqz $t0, .Lget_flow_variable
     lui $t0, %hi(game_flow_command_return)
     addiu $t0, $t0, %lo(game_flow_command_return)
@@ -58,10 +58,11 @@ p3p_shrine_wait_hook:
     jal .Lget_flow_variable
     nop
     lw $t0, 0x110($s1)          # Integer result set by the original command.
-    addiu $t1, $t0, -1
-    sltiu $t1, $t1, 5
+    # The order starts at 1. A value of 2 is the first day after deposit.
+    addiu $t1, $t0, -2
+    sltiu $t1, $t1, 4
     beqz $t1, .Lreturn_shrine_wait
-    li $t0, 6                  # Preserve 0 (no order) and already ready orders.
+    li $t0, 6                  # The original script collects at 6 or above.
     sw $t0, 0x110($s1)
 .Lreturn_shrine_wait:
     lw $ra, 12($sp)

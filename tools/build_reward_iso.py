@@ -104,7 +104,7 @@ def patch_eboot(decrypted, payload):
     require(payload_section[3] == PAYLOAD_ADDRESS and len(payload_code) % 4 == 0, 'Unexpected payload layout')
     symbols = mod.symbols()
     settings = symbols['p3p_reward_settings'] - PAYLOAD_ADDRESS
-    setting_symbols = ('p3p_xp_mode', 'p3p_money_mode', 'p3p_community_affinity_zero', 'p3p_shrine_wait_zero')
+    setting_symbols = ('p3p_xp_mode', 'p3p_money_mode', 'p3p_community_affinity_zero', 'p3p_shrine_wait_one_day')
     settings_end = settings + 8 + 4*len(setting_symbols)
     require(payload_code[settings:settings_end] == b'P3PRWD01' + bytes(4*len(setting_symbols)),
             'Runtime settings must start at AUTO and Off')

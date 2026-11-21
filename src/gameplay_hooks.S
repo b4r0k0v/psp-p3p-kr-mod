@@ -140,6 +140,6 @@ p3p_money_mode:
 .global p3p_community_affinity_zero
 p3p_community_affinity_zero:
     .word 0
-.global p3p_shrine_wait_zero
-p3p_shrine_wait_zero:
+.global p3p_shrine_wait_one_day
+p3p_shrine_wait_one_day:
     .word 0
