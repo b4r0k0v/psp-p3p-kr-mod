@@ -25,7 +25,7 @@ $(BUILD):
 	mkdir -p $@
 
 $(BUILD)/%.o: src/%.S | $(BUILD)
-	psp-gcc -Wa,--fatal-warnings -G0 -mno-abicalls -fno-pic -c $< -o $@
+	psp-gcc -Wa,--fatal-warnings -G0 -mno-abicalls -fno-pic -MMD -MP -c $< -o $@
 
 $(BUILD)/%.o: src/%.c | $(BUILD)
 	psp-gcc -Wall -Wextra -Werror -Os -G0 -mno-abicalls -fno-pic -ffreestanding \
@@ -41,3 +41,5 @@ $(FUSION_HOOKS): $(OBJECTS)
 		--defsym game_fusion_open_help=0x13e9b0 \
 		--defsym game_fusion_close_help=0x13e0bc \
 		--defsym game_fusion_button_edges=0x693948 -o $@ $^
+
+-include $(OBJECTS:.o=.d)
