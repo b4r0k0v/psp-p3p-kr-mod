@@ -124,13 +124,30 @@ p3p_coin_hook:
     j game_coin_reward_continue
     ori $a0, $a0, 0x967f
 
+.global p3p_community_affinity_hook
+p3p_community_affinity_hook:
+    lui $v1, %hi(p3p_community_affinity_zero)
+    lw $v1, %lo(p3p_community_affinity_zero)($v1)
+    bnez $v1, .Lzero_affinity_threshold
+    nop
+    lhu $v1, 16($v0)
+    j game_community_affinity_compare_continue
+    sltu $v1, $s1, $v1
+.Lzero_affinity_threshold:
+    j game_community_affinity_compare_continue
+    move $v1, $zero            # Unsigned accumulated affinity is always >= 0.
+
 .balign 4
 .global p3p_reward_settings
 p3p_reward_settings:
     .ascii "P3PRWD01"
+# Keep the three setting words in menu row order.
 .global p3p_xp_mode
 p3p_xp_mode:
     .word 0
 .global p3p_money_mode
 p3p_money_mode:
+    .word 0
+.global p3p_community_affinity_zero
+p3p_community_affinity_zero:
     .word 0

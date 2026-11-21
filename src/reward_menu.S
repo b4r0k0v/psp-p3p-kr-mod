@@ -2,7 +2,8 @@
 .set noat
 
 .equ SELECT, 0x0001
-.equ UP_DOWN, 0x0050
+.equ UP, 0x0010
+.equ DOWN, 0x0040
 .equ RIGHT, 0x0020
 .equ LEFT, 0x0080
 .equ CROSS, 0x4000
@@ -13,6 +14,8 @@
 .equ MENU_CLOSING, 3
 .equ OPEN_TIME_US, 120000
 .equ CLOSE_TIME_US, 90000
+.equ COMMUNITY_ROW, 2
+.equ ROW_COUNT, 3
 
 .equ PALETTE_TITLE, 0
 .equ PALETTE_SELECTED, 4
@@ -52,11 +55,22 @@ p3p_config_input_hook:
     nop
     andi $t2, $a0, CROSS
     bnez $t2, .Lclose_menu
-    andi $t2, $a0, UP_DOWN
+    andi $t2, $a0, UP | DOWN
     lui $t3, %hi(menu_row)
     lw $t1, %lo(menu_row)($t3)
-    sltu $t2, $zero, $t2
-    xor $t1, $t1, $t2
+    xori $t0, $t2, DOWN
+    sltiu $t0, $t0, 1
+    xori $t2, $t2, UP
+    sltiu $t2, $t2, 1
+    addu $t1, $t1, $t0
+    subu $t1, $t1, $t2
+    bgez $t1, .Lwrap_row_down
+    nop
+    li $t1, ROW_COUNT - 1
+.Lwrap_row_down:
+    li $t0, ROW_COUNT
+    xor $t0, $t1, $t0
+    movz $t1, $zero, $t0
     sw $t1, %lo(menu_row)($t3)
 
     andi $t2, $a0, RIGHT | LEFT
@@ -69,10 +83,12 @@ p3p_config_input_hook:
 .Lchange_mode:
     lui $t2, %hi(p3p_xp_mode)
     addiu $t2, $t2, %lo(p3p_xp_mode)
-    lui $t3, %hi(p3p_money_mode)
-    addiu $t3, $t3, %lo(p3p_money_mode)
-    movn $t2, $t3, $t1
+    sll $t3, $t1, 2
+    addu $t2, $t2, $t3
     lw $t3, 0($t2)
+    li $t4, COMMUNITY_ROW
+    beq $t1, $t4, .Ltoggle_community
+    nop
     addu $t3, $t3, $t0
     li $t0, 5
     bne $t3, $t0, .Lwrap_left
@@ -82,6 +98,10 @@ p3p_config_input_hook:
     bgez $t3, .Lstore_mode
     nop
     li $t3, 4
+    b .Lstore_mode
+    nop
+.Ltoggle_community:
+    xori $t3, $t3, 1
 .Lstore_mode:
     j game_config_input_return
     sw $t3, 0($t2)
@@ -186,16 +206,25 @@ p3p_config_draw_hook:
     addiu $a3, $a3, %lo(xp_label)
     move $a0, $zero
     jal .Ldraw_row
-    li $a1, 115
+    li $a1, 108
 
     lui $a3, %hi(money_label)
     addiu $a3, $a3, %lo(money_label)
     li $a0, 1
     jal .Ldraw_row
-    li $a1, 145
+    li $a1, 137
+
+    lui $a3, %hi(community_label)
+    addiu $a3, $a3, %lo(community_label)
+    li $a0, COMMUNITY_ROW
+    jal .Ldraw_row
+    li $a1, 166
 
     lui $t0, %hi(menu_row)
     lw $t0, %lo(menu_row)($t0)
+    li $t1, COMMUNITY_ROW
+    beq $t0, $t1, .Ldraw_return
+    nop
     lui $a3, %hi(xp_description)
     addiu $a3, $a3, %lo(xp_description)
     lui $t1, %hi(money_description)
@@ -204,7 +233,7 @@ p3p_config_draw_hook:
     lw $a0, PALETTE_DESCRIPTION($s5)
     li $t2, 120
     jal .Ldraw_text
-    li $t3, 190
+    li $t3, 203
 
 .Ldraw_return:
     lw $ra, 28($sp)
@@ -248,20 +277,32 @@ p3p_config_draw_hook:
 
     lw $t0, 20($sp)
     lui $t1, %hi(p3p_xp_mode)
-    lw $t1, %lo(p3p_xp_mode)($t1)
-    lui $t2, %hi(p3p_money_mode)
-    lw $t2, %lo(p3p_money_mode)($t2)
-    movn $t1, $t2, $t0
+    addiu $t1, $t1, %lo(p3p_xp_mode)
+    sll $t2, $t0, 2
+    addu $t1, $t1, $t2
+    lw $t1, 0($t1)
+    li $t2, COMMUNITY_ROW
+    beq $t0, $t2, .Ldraw_toggle
+    nop
     sltiu $t0, $t1, 5
     movz $t1, $zero, $t0
     sll $t1, $t1, 3
     lui $a3, %hi(mode_labels)
     addiu $a3, $a3, %lo(mode_labels)
     addu $a3, $a3, $t1
+    b .Ldraw_value
+    li $t2, 275
+.Ldraw_toggle:
+    sltu $t1, $zero, $t1
+    sll $t1, $t1, 2
+    lui $a3, %hi(toggle_labels)
+    addiu $a3, $a3, %lo(toggle_labels)
+    addu $a3, $a3, $t1
+    li $t2, 312
+.Ldraw_value:
     lw $a0, 16($sp)
     lw $t3, 24($sp)
     lw $ra, 28($sp)
-    li $t2, 275
     addiu $sp, $sp, 32
 .Ldraw_text:
     ins $a0, $s3, 0, 8
@@ -292,14 +333,18 @@ selection_marker:
     .asciz ">"
 # UCKS45140 font encoding. The comments show the decoded menu strings.
 menu_title:
-    # 보상 배율
-    .byte 0x8a, 0xc7, 0x8b, 0xe0, 0x20, 0x8a, 0x99, 0x8e, 0xf5, 0
+    # 모드 설정
+    .byte 0x89, 0xc3, 0x87, 0x9e, 0x20, 0x8b, 0xfe, 0x8f, 0xc5, 0
 xp_label:
     # 경험치
     .byte 0x83, 0xc9, 0x94, 0xbd, 0x91, 0xdc, 0
 money_label:
     # 돈
     .byte 0x86, 0xf0, 0
+community_label:
+    # 커뮤 랭크업 필요 호감도 0
+    .byte 0x91, 0xfa, 0x89, 0xf3, 0x20, 0x88, 0x9e, 0x92, 0xc2, 0x8d, 0xfe, 0x20
+    .byte 0x94, 0x9f, 0x8e, 0xc9, 0x20, 0x94, 0xd6, 0x83, 0x8b, 0x86, 0xee, 0x20, '0', 0
 xp_description:
     # 전투에서 얻는 경험치에 적용됩니다.
     .byte 0x8f, 0xbf, 0x93, 0x8e, 0x8e, 0x86, 0x8b, 0xf8, 0x20, 0x8d, 0xf9, 0x86, 0x9d, 0x20
@@ -311,6 +356,10 @@ money_description:
     .byte 0x8e, 0xfb, 0x88, 0xc3, 0x20, 0x8d, 0xf9, 0x86, 0x9d, 0x20, 0x86, 0xf0, 0x8e, 0x86, 0x20
     .byte 0x8f, 0xbe, 0x8e, 0xd0, 0x87, 0x84, 0x86, 0xaa, 0x86, 0xb4, 0x2e, 0
 .balign 4
+toggle_labels:
+    .asciz "Off"
+    .asciz "On"
+    .byte 0
 mode_labels:
     .asciz "AUTO"
     .space 3

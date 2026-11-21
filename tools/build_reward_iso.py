@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a new UCKS45140 v1.00 ISO with reward multipliers and manual skill inheritance."""
+"""Build a new UCKS45140 v1.00 modded ISO."""
 
 import argparse
 from hashlib import sha256
@@ -18,6 +18,7 @@ HOOKS = (
     (0x156614, (0x02111021, 0x3484967F), 'p3p_coin_hook'),
     (0x128850, (0x8C440004, 0x30832000), 'p3p_config_input_hook'),
     (0x126ECC, (0x27BDFF60, 0xAFB20048), 'p3p_config_draw_hook'),
+    (0xC1B0, (0x94430010, 0x0223182B), 'p3p_community_affinity_hook'),
 )
 FUSION_HOOKS = (
     (0x57608, (0x12E00042, 0x0040A021), 'p3p_fusion_pool_hook'),
@@ -102,7 +103,11 @@ def patch_eboot(decrypted, payload):
     require(payload_section[3] == PAYLOAD_ADDRESS and len(payload_code) % 4 == 0, 'Unexpected payload layout')
     symbols = mod.symbols()
     settings = symbols['p3p_reward_settings'] - PAYLOAD_ADDRESS
-    require(payload_code[settings:settings+16] == b'P3PRWD01' + bytes(8), 'Reward settings must start at AUTO')
+    require(payload_code[settings:settings+20] == b'P3PRWD01' + bytes(12),
+            'Runtime settings must start at AUTO and Off')
+    for row, symbol in enumerate(('p3p_xp_mode', 'p3p_money_mode', 'p3p_community_affinity_zero')):
+        require(symbols[symbol] == PAYLOAD_ADDRESS + settings + 8 + row*4,
+                f'{symbol} is out of menu row order')
     extra_relocs = bytearray()
     patches = []
     hooks = HOOKS + FUSION_HOOKS

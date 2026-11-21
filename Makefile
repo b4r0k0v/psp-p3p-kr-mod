@@ -9,6 +9,7 @@ REWARD_SYMBOLS := \
 	--defsym game_config_input_continue=0x128858 \
 	--defsym game_config_input_return=0x12888c \
 	--defsym game_config_draw_continue=0x126ed4 \
+	--defsym game_community_affinity_compare_continue=0xc1b8 \
 	--defsym game_time_us=0x37c7e0 \
 	--defsym game_draw_text=0x17b398
 LINK_PAYLOAD := psp-ld -EL --emit-relocs --section-start=.text=0x6be000 --entry=p3p_base_xp_hook
