@@ -1,7 +1,7 @@
 BUILD := build/rewards
 FUSION_HOOKS := $(BUILD)/fusion_hooks.elf
-OBJECTS := $(addprefix $(BUILD)/,reward_hooks.o reward_menu.o fusion_hooks.o fusion_inheritance.o)
-REWARD_SYMBOLS := \
+OBJECTS := $(addprefix $(BUILD)/,gameplay_hooks.o mod_settings_menu.o fusion_hooks.o fusion_inheritance.o)
+GAMEPLAY_SYMBOLS := \
 	--defsym game_hero_reward_return=0x252c4c \
 	--defsym game_persona_max_level=0x252f7c \
 	--defsym game_persona_reward_continue=0x252fa0 \
@@ -32,7 +32,7 @@ $(BUILD)/%.o: src/%.c | $(BUILD)
 		-fno-strict-aliasing -fno-jump-tables -c $< -o $@
 
 $(FUSION_HOOKS): $(OBJECTS)
-	$(LINK_PAYLOAD) $(REWARD_SYMBOLS) \
+	$(LINK_PAYLOAD) $(GAMEPLAY_SYMBOLS) \
 		--defsym game_fusion_pool_cleanup=0x57714 \
 		--defsym game_fusion_pool_continue=0x57610 \
 		--defsym game_fusion_input_continue=0x4d0b4 \

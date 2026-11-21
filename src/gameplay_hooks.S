@@ -124,7 +124,7 @@ p3p_coin_hook:
     j game_coin_reward_continue
     ori $a0, $a0, 0x967f
 
-#include "reward_progression.inc"
+#include "progression_hooks.inc"
 
 .balign 4
 .global p3p_reward_settings

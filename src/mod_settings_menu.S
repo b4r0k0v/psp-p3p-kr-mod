@@ -35,7 +35,7 @@
 
 # Keep the menu in one assembler unit so branch labels and data stay local.
 .text
-#include "reward_menu/input.inc"
-#include "reward_menu/draw.inc"
-#include "reward_menu/rows.inc"
-#include "reward_menu/data.inc"
+#include "mod_settings_menu/input.inc"
+#include "mod_settings_menu/draw.inc"
+#include "mod_settings_menu/rows.inc"
+#include "mod_settings_menu/data.inc"
