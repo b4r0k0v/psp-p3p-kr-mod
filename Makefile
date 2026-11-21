@@ -1,7 +1,6 @@
 BUILD := build/rewards
-HOOKS := $(BUILD)/reward_hooks.elf
 FUSION_HOOKS := $(BUILD)/fusion_hooks.elf
-REWARD_OBJECTS := $(BUILD)/reward_hooks.o $(BUILD)/reward_menu.o
+OBJECTS := $(addprefix $(BUILD)/,reward_hooks.o reward_menu.o fusion_hooks.o fusion_inheritance.o)
 REWARD_SYMBOLS := \
 	--defsym game_hero_reward_return=0x252c4c \
 	--defsym game_persona_max_level=0x252f7c \
@@ -14,9 +13,8 @@ REWARD_SYMBOLS := \
 	--defsym game_draw_text=0x17b398
 LINK_PAYLOAD := psp-ld -EL --emit-relocs --section-start=.text=0x6be000 --entry=p3p_base_xp_hook
 
-.PHONY: all fusion
-all: $(HOOKS)
-fusion: $(FUSION_HOOKS)
+.PHONY: all
+all: $(FUSION_HOOKS)
 
 $(BUILD):
 	mkdir -p $@
@@ -28,10 +26,7 @@ $(BUILD)/%.o: src/%.c | $(BUILD)
 	psp-gcc -Wall -Wextra -Werror -Os -G0 -mno-abicalls -fno-pic -ffreestanding \
 		-fno-strict-aliasing -fno-jump-tables -c $< -o $@
 
-$(HOOKS): $(REWARD_OBJECTS)
-	$(LINK_PAYLOAD) $(REWARD_SYMBOLS) -o $@ $^
-
-$(FUSION_HOOKS): $(REWARD_OBJECTS) $(BUILD)/fusion_hooks.o $(BUILD)/fusion_inheritance.o
+$(FUSION_HOOKS): $(OBJECTS)
 	$(LINK_PAYLOAD) $(REWARD_SYMBOLS) \
 		--defsym game_fusion_pool_cleanup=0x57714 \
 		--defsym game_fusion_pool_continue=0x57610 \

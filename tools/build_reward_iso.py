@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a new UCKS45140 v1.00 ISO with the native reward hooks."""
+"""Build a new UCKS45140 v1.00 ISO with reward multipliers and manual skill inheritance."""
 
 import argparse
 from hashlib import sha256
@@ -76,7 +76,7 @@ class Elf:
         }
 
 
-def patch_eboot(decrypted, payload, manual_inheritance=False):
+def patch_eboot(decrypted, payload):
     require(sha256(decrypted).hexdigest() == DECRYPTED_SHA256, 'Unexpected decrypted EBOOT SHA-256')
     game, mod = Elf(decrypted), Elf(payload)
     require(game.header[1] == 0xFFA0, 'Expected a relocatable PSP EBOOT')
@@ -105,7 +105,7 @@ def patch_eboot(decrypted, payload, manual_inheritance=False):
     require(payload_code[settings:settings+16] == b'P3PRWD01' + bytes(8), 'Reward settings must start at AUTO')
     extra_relocs = bytearray()
     patches = []
-    hooks = HOOKS + FUSION_HOOKS if manual_inheritance else HOOKS
+    hooks = HOOKS + FUSION_HOOKS
     for address, expected, symbol in hooks:
         file_pos = text[1] + address
         require(address + 8 <= text[4] and struct.unpack_from('<2I', decrypted, file_pos) == expected,
@@ -282,15 +282,13 @@ def main():
     parser.add_argument('--original', type=Path, required=True)
     parser.add_argument('--decrypted', type=Path, required=True)
     parser.add_argument('--payload', type=Path)
-    parser.add_argument('--manual-inheritance', action='store_true')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         parser.error(f'output already exists: {args.output}')
     try:
-        default_payload = 'fusion_hooks.elf' if args.manual_inheritance else 'reward_hooks.elf'
-        payload = args.payload or Path('build/rewards') / default_payload
-        eboot = patch_eboot(args.decrypted.read_bytes(), payload.read_bytes(), args.manual_inheritance)
+        payload = args.payload or Path('build/rewards/fusion_hooks.elf')
+        eboot = patch_eboot(args.decrypted.read_bytes(), payload.read_bytes())
         build_iso(args.original, args.output, eboot)
     except (OSError, ValueError, KeyError, struct.error) as error:
         raise SystemExit(str(error)) from error
