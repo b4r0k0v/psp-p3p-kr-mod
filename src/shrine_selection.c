@@ -43,9 +43,13 @@ extern const ShrinePalette shrine_palettes[2];
 extern volatile uint32_t game_button_edges;
 extern int game_is_female_route(void);
 extern int game_get_flow_variable(int index);
+extern const uint8_t *game_item_record(int item);
 extern unsigned game_item_count(int item);
 extern const char *game_item_name(int item);
+extern volatile int32_t game_skill_help_handle;
+extern unsigned game_bmd_count(int handle);
 extern void p3p_shrine_text(uint32_t color, int x, int y, const char *text);
+extern void p3p_shrine_bmd_text(uint32_t color, int x, int y, int handle, int message_index);
 extern void p3p_shrine_rect(uint32_t color, int x, int y, int width, int height);
 extern const char shrine_list_title[], shrine_quantity[], shrine_confirm_title[], shrine_controls[];
 
@@ -80,15 +84,30 @@ static void draw_card(unsigned item, int y)
     p3p_shrine_text(0xffffffff, 329, y, amount);
 }
 
+static void draw_card_description(unsigned item, uint32_t color, int x, int y)
+{
+    int handle = game_skill_help_handle;
+    if (handle < 0)
+        return;
+    const uint8_t *record = game_item_record(item);
+    if (!record)
+        return;
+    unsigned skill = *(const uint16_t *)(record + 0x24);
+    if (skill && skill < game_bmd_count(handle))
+        p3p_shrine_bmd_text(color, x, y, handle, skill);
+}
+
 void p3p_shrine_draw_selection(void)
 {
     Selection *selection = &p3p_shrine_selection_state;
     const ShrinePalette *palette = &shrine_palettes[game_is_female_route() != 0];
     if (selection->confirming) {
-        p3p_shrine_rect(palette->background, 97, 84, 286, 105);
-        p3p_shrine_text(palette->heading, 117, 97, shrine_confirm_title);
-        draw_card(selection->cards[selection->cursor], 126);
-        p3p_shrine_text(palette->controls, 117, 160, shrine_controls);
+        unsigned item = selection->cards[selection->cursor];
+        p3p_shrine_rect(palette->background, 97, 64, 286, 144);
+        p3p_shrine_text(palette->heading, 117, 77, shrine_confirm_title);
+        draw_card(item, 104);
+        draw_card_description(item, palette->controls, 117, 128);
+        p3p_shrine_text(palette->controls, 117, 178, shrine_controls);
         selection->presented = 1;
         return;
     }

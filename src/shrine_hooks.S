@@ -71,6 +71,21 @@ p3p_shrine_text:
     j game_draw_text
     move $t1, $zero
 
+# RRGGBBAA, x, y, bmd_handle, message_index.
+.global p3p_shrine_bmd_text
+p3p_shrine_bmd_text:
+    mtc1 $a1, $f12
+    mtc1 $a2, $f13
+    cvt.s.w $f12, $f12
+    cvt.s.w $f13, $f13
+    mtc1 $zero, $f14
+    move $t1, $t0
+    move $t0, $a3
+    li $a1, 1
+    move $a2, $zero
+    j game_draw_bmd_text
+    li $a3, 1
+
 # RRGGBBAA, x, y, width, height. Match the rectangle API used by mod settings.
 .global p3p_shrine_rect
 p3p_shrine_rect:
