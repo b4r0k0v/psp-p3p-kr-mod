@@ -80,7 +80,7 @@ p3p_config_draw_hook:
     addiu $a3, $a3, %lo(menu_title)
     lw $a0, PALETTE_TITLE($s5)
     li $t2, LABEL_X
-    li $t3, 46
+    li $t3, 36
     jal .Ldraw_text
     nop
 
@@ -88,37 +88,43 @@ p3p_config_draw_hook:
     addiu $a3, $a3, %lo(xp_label)
     move $a0, $zero
     jal .Ldraw_row
-    li $a1, 76
+    li $a1, 62
 
     lui $a3, %hi(money_label)
     addiu $a3, $a3, %lo(money_label)
     li $a0, 1
     jal .Ldraw_row
-    li $a1, 101
+    li $a1, 86
 
     lui $a3, %hi(community_label)
     addiu $a3, $a3, %lo(community_label)
     li $a0, COMMUNITY_ROW
     jal .Ldraw_row
-    li $a1, 126
+    li $a1, 110
 
     lui $a3, %hi(shrine_label)
     addiu $a3, $a3, %lo(shrine_label)
     li $a0, SHRINE_ROW
     jal .Ldraw_row
-    li $a1, 151
+    li $a1, 134
 
     lui $a3, %hi(shrine_selection_label)
     addiu $a3, $a3, %lo(shrine_selection_label)
     li $a0, SHRINE_SELECTION_ROW
     jal .Ldraw_row
-    li $a1, 176
+    li $a1, 158
 
     lui $a3, %hi(battle_drop_label)
     addiu $a3, $a3, %lo(battle_drop_label)
     li $a0, BATTLE_DROP_ROW
     jal .Ldraw_row
-    li $a1, 201
+    li $a1, 182
+
+    lui $a3, %hi(bench_xp_label)
+    addiu $a3, $a3, %lo(bench_xp_label)
+    li $a0, BENCH_XP_ROW
+    jal .Ldraw_row
+    li $a1, 206
 
     lui $t0, %hi(menu_row)
     lw $t0, %lo(menu_row)($t0)
@@ -141,12 +147,16 @@ p3p_config_draw_hook:
     movz $a3, $t1, $t2
     lui $t1, %hi(battle_drop_description)
     addiu $t1, $t1, %lo(battle_drop_description)
-    xori $t0, $t0, BATTLE_DROP_ROW
+    xori $t2, $t0, BATTLE_DROP_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(bench_xp_description)
+    addiu $t1, $t1, %lo(bench_xp_description)
+    xori $t0, $t0, BENCH_XP_ROW
     movz $a3, $t1, $t0
     lw $a0, PALETTE_DESCRIPTION($s5)
     li $t2, LABEL_X
     jal .Ldraw_text
-    li $t3, 233
+    li $t3, 236
 
 .Ldraw_return:
     lw $ra, 28($sp)

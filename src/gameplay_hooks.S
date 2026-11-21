@@ -149,3 +149,6 @@ p3p_shrine_card_selection:
 .global p3p_battle_drop_100
 p3p_battle_drop_100:
     .word 0
+.global p3p_bench_xp
+p3p_bench_xp:
+    .word 0

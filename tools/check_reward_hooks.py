@@ -17,7 +17,7 @@ TEST_SITES = {
     HOOK_SITES[name] for name in (
         'p3p_community_affinity_hook', 'p3p_config_input_hook', 'p3p_shrine_wait_hook',
         'p3p_shrine_selection_hook', 'p3p_battle_drop_hook',
-        'p3p_battle_drop_grant_hook', 'p3p_battle_result_draw_hook',
+        'p3p_battle_drop_grant_hook', 'p3p_battle_result_draw_hook', 'p3p_bench_xp_hook',
     )
 }
 
@@ -176,15 +176,20 @@ def check_menu(runner):
     xp, money = symbols['p3p_xp_mode'], symbols['p3p_money_mode']
     affinity, shrine = symbols['p3p_community_affinity_zero'], symbols['p3p_shrine_wait_one_day']
     selection, battle_drop = symbols['p3p_shrine_card_selection'], symbols['p3p_battle_drop_100']
+    bench_xp = symbols['p3p_bench_xp']
     memory = {
         row: 2, state: 0, affinity: 0, shrine: 0, selection: 0,
-        battle_drop: 0, xp: 0, money: 0, 0x100018: 0,
+        battle_drop: 0, bench_xp: 0, xp: 0, money: 0, 0x100018: 0,
     }
 
     assert push(1) == 0x12888c and memory[row] == 0 and memory[state] == 1
     push(0x20)
     assert memory[xp] == 0
     memory[state] = 2
+    push(0x10)
+    assert memory[row] == 6
+    push(0x20)
+    assert (memory[bench_xp], memory[battle_drop], memory[selection], memory[shrine]) == (1, 0, 0, 0)
     push(0x10)
     assert memory[row] == 5
     push(0x20)
@@ -205,6 +210,7 @@ def check_menu(runner):
     assert memory[affinity] == 1
     push(0x80)
     assert memory[affinity] == 0
+    push(0x40)
     push(0x40)
     push(0x40)
     push(0x40)
@@ -354,6 +360,45 @@ def check_battle_drop(runner):
     assert stop == 0x2526c8 and regs[31] == 0x12345678 and regs[30] == 0x87654321
 
 
+def check_bench_xp(runner):
+    symbols = runner.symbols
+    toggle = symbols['p3p_bench_xp']
+    start = HOOK_SITES['p3p_bench_xp_hook']
+    stack = 0x400000
+    reward_ptr, input_ptr, saved_s0, orig_ra = 0x500000, 0x510000, 0x11223344, 0x08a50c68
+
+    # Off: skips helper, allocates 32 bytes, saves s0 at 0(sp), and resumes at 0x2530b4.
+    memory = {toggle: 0}
+    stop, regs = runner.run(
+        start, {0x2530b4},
+        {4: reward_ptr, 5: input_ptr, 16: saved_s0, 29: stack, 31: orig_ra}, memory,
+    )
+    assert stop == 0x2530b4 and regs[29] == stack - 32
+    assert regs[4] == reward_ptr and regs[5] == input_ptr and regs[31] == orig_ra
+    assert memory[stack - 32] == saved_s0
+
+    # On: calls p3p_grant_bench_xp(a0, a1), restores ra/a0/a1, then allocates 32 bytes and saves s0.
+    called = []
+
+    def grant_stub(regs, _):
+        assert regs[4] == reward_ptr and regs[5] == input_ptr and regs[29] == stack - 32
+        called.append((regs[4], regs[5]))
+        regs[4] = 0xdeadbeef
+        regs[5] = 0xcafebabe
+        return regs[31]
+
+    memory = {toggle: 1}
+    stop, regs = runner.run(
+        start, {0x2530b4},
+        {4: reward_ptr, 5: input_ptr, 16: saved_s0, 29: stack, 31: orig_ra}, memory,
+        {symbols['p3p_grant_bench_xp']: grant_stub},
+    )
+    assert called == [(reward_ptr, input_ptr)]
+    assert stop == 0x2530b4 and regs[29] == stack - 32
+    assert regs[4] == reward_ptr and regs[5] == input_ptr and regs[31] == orig_ra
+    assert memory[stack - 32] == saved_s0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('iso', type=Path)
@@ -370,7 +415,10 @@ def main():
     symbols = payload.symbols()
     for base in (0, 0x08804000):
         runner = HookRunner(eboot, symbols, base)
-        for check in (check_affinity, check_menu, check_shrine, check_shrine_selection, check_battle_drop):
+        for check in (
+            check_affinity, check_menu, check_shrine,
+            check_shrine_selection, check_battle_drop, check_bench_xp,
+        ):
             try:
                 check(runner)
             except AssertionError as error:
