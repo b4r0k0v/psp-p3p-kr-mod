@@ -20,6 +20,8 @@ p3p_config_input_hook:
     beqz $t2, .Lconfig_input
     nop
     begin_transition MENU_OPENING
+    lui $t3, %hi(menu_scroll)
+    sw $zero, %lo(menu_scroll)($t3)
     lui $t3, %hi(menu_row)
     j game_config_input_return
     sw $zero, %lo(menu_row)($t3)
@@ -47,6 +49,22 @@ p3p_config_input_hook:
     xor $t0, $t1, $t0
     movz $t1, $zero, $t0
     sw $t1, %lo(menu_row)($t3)
+    lui $t4, %hi(menu_scroll)
+    lw $t2, %lo(menu_scroll)($t4)
+    sltu $t0, $t1, $t2
+    bnez $t0, .Lset_scroll_top
+    addiu $t0, $t2, VISIBLE_ROWS
+    sltu $t0, $t1, $t0
+    bnez $t0, .Lscroll_done
+    nop
+    addiu $t2, $t1, -(VISIBLE_ROWS - 1)
+    b .Lstore_scroll
+    nop
+.Lset_scroll_top:
+    move $t2, $t1
+.Lstore_scroll:
+    sw $t2, %lo(menu_scroll)($t4)
+.Lscroll_done:
 
     andi $t2, $a0, RIGHT | LEFT
     li $t3, RIGHT

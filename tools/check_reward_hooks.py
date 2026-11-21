@@ -172,38 +172,38 @@ def check_menu(runner):
 
     symbols = runner.symbols
     calls = {symbols['game_time_us']: game_time_us}
-    row, state = symbols['menu_row'], symbols['menu_state']
+    row, scroll, state = symbols['menu_row'], symbols['menu_scroll'], symbols['menu_state']
     xp, money = symbols['p3p_xp_mode'], symbols['p3p_money_mode']
     affinity, shrine = symbols['p3p_community_affinity_zero'], symbols['p3p_shrine_wait_one_day']
     selection, battle_drop = symbols['p3p_shrine_card_selection'], symbols['p3p_battle_drop_100']
     bench_xp = symbols['p3p_bench_xp']
     memory = {
-        row: 2, state: 0, affinity: 0, shrine: 0, selection: 0,
+        row: 2, scroll: 3, state: 0, affinity: 0, shrine: 0, selection: 0,
         battle_drop: 0, bench_xp: 0, xp: 0, money: 0, 0x100018: 0,
     }
 
-    assert push(1) == 0x12888c and memory[row] == 0 and memory[state] == 1
+    assert push(1) == 0x12888c and memory[row] == 0 and memory[scroll] == 0 and memory[state] == 1
     push(0x20)
     assert memory[xp] == 0
     memory[state] = 2
     push(0x10)
-    assert memory[row] == 6
+    assert memory[row] == 6 and memory[scroll] == 2
     push(0x20)
     assert (memory[bench_xp], memory[battle_drop], memory[selection], memory[shrine]) == (1, 0, 0, 0)
     push(0x10)
-    assert memory[row] == 5
+    assert memory[row] == 5 and memory[scroll] == 2
     push(0x20)
     assert (memory[battle_drop], memory[selection], memory[shrine]) == (1, 0, 0)
     push(0x10)
-    assert memory[row] == 4
+    assert memory[row] == 4 and memory[scroll] == 2
     push(0x20)
     assert (memory[selection], memory[shrine]) == (1, 0)
     push(0x10)
-    assert memory[row] == 3
+    assert memory[row] == 3 and memory[scroll] == 2
     push(0x20)
     assert memory[shrine] == 1
     push(0x10)
-    assert memory[row] == 2
+    assert memory[row] == 2 and memory[scroll] == 2
     push(0x20)
     assert (memory[affinity], memory[shrine], memory[xp], memory[money]) == (1, 1, 0, 0)
     push(0xa0)
@@ -215,17 +215,25 @@ def check_menu(runner):
     push(0x40)
     push(0x40)
     push(0x40)
-    assert memory[row] == 0
+    assert memory[row] == 0 and memory[scroll] == 0
     push(0x80)
     assert memory[xp] == 4
     push(0x40)
-    assert memory[row] == 1
+    assert memory[row] == 1 and memory[scroll] == 0
     push(0x20)
     assert (memory[money], memory[xp], memory[affinity], memory[shrine]) == (1, 4, 0, 1)
     push(0x50)
     assert memory[row] == 1
     push(0x4000 | 0x20)
     assert memory[state] == 3 and memory[money] == 1
+    # Verify downward scroll from row 4 -> 5 -> 6.
+    memory[state] = 2
+    memory[row] = 4
+    memory[scroll] = 0
+    push(0x40)
+    assert memory[row] == 5 and memory[scroll] == 1
+    push(0x40)
+    assert memory[row] == 6 and memory[scroll] == 2
     memory[0x100018] = 1
     assert push(1) == 0x128858
 

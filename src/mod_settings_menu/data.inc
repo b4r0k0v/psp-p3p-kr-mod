@@ -13,6 +13,8 @@ menu_started_us:
     .word 0
 menu_row:
     .word 0
+menu_scroll:
+    .word 0
 # UCKS45140 font encoding. The comments show the decoded menu strings.
 menu_title:
     # 모드 설정

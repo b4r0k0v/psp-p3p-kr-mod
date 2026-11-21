@@ -7,11 +7,14 @@ p3p_config_draw_hook:
     beqz $t0, .Lconfig_draw
     nop
 
-    addiu $sp, $sp, -32
+    addiu $sp, $sp, -48
+    sw $s0, 32($sp)
+    sw $s1, 36($sp)
+    sw $s2, 40($sp)
     sw $s3, 8($sp)
     sw $s4, 12($sp)
     sw $s5, 24($sp)
-    sw $ra, 28($sp)
+    sw $ra, 44($sp)
     lbu $t1, CONFIG_PALETTE_INDEX($a1)
     xori $t1, $t1, 1            # Native palette 1 is the female route.
     sltiu $t1, $t1, 1
@@ -66,12 +69,15 @@ p3p_config_draw_hook:
     sw $zero, %lo(menu_state)($t2)
     lw $a0, 16($sp)
     lw $a1, 20($sp)
-    lw $ra, 28($sp)
+    lw $ra, 44($sp)
+    lw $s0, 32($sp)
+    lw $s1, 36($sp)
+    lw $s2, 40($sp)
     lw $s3, 8($sp)
     lw $s4, 12($sp)
     lw $s5, 24($sp)
     b .Lconfig_draw
-    addiu $sp, $sp, 32
+    addiu $sp, $sp, 48
 
 .Ldraw_contents:
     beqz $s3, .Ldraw_return
@@ -80,51 +86,62 @@ p3p_config_draw_hook:
     addiu $a3, $a3, %lo(menu_title)
     lw $a0, PALETTE_TITLE($s5)
     li $t2, LABEL_X
-    li $t3, 36
+    li $t3, 46
     jal .Ldraw_text
     nop
 
+    lui $t0, %hi(menu_row)
+    lw $t0, %lo(menu_row)($t0)
+    addiu $t0, $t0, '1'
+    sb $t0, 0($sp)
+    li $t0, '/'
+    sb $t0, 1($sp)
+    li $t0, '0' + ROW_COUNT
+    sb $t0, 2($sp)
+    sb $zero, 3($sp)
+    move $a3, $sp
+    lw $a0, PALETTE_TITLE($s5)
+    li $t2, VALUE_X + 38
+    jal .Ldraw_text
+    li $t3, 46
+
+    lui $s0, %hi(menu_scroll)
+    lw $s0, %lo(menu_scroll)($s0)
+    addiu $s1, $s0, VISIBLE_ROWS
+    li $s2, 76
+.Ldraw_row_loop:
     lui $a3, %hi(xp_label)
     addiu $a3, $a3, %lo(xp_label)
-    move $a0, $zero
+    lui $t1, %hi(money_label)
+    addiu $t1, $t1, %lo(money_label)
+    xori $t2, $s0, 1
+    movz $a3, $t1, $t2
+    lui $t1, %hi(community_label)
+    addiu $t1, $t1, %lo(community_label)
+    xori $t2, $s0, COMMUNITY_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(shrine_label)
+    addiu $t1, $t1, %lo(shrine_label)
+    xori $t2, $s0, SHRINE_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(shrine_selection_label)
+    addiu $t1, $t1, %lo(shrine_selection_label)
+    xori $t2, $s0, SHRINE_SELECTION_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(battle_drop_label)
+    addiu $t1, $t1, %lo(battle_drop_label)
+    xori $t2, $s0, BATTLE_DROP_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(bench_xp_label)
+    addiu $t1, $t1, %lo(bench_xp_label)
+    xori $t2, $s0, BENCH_XP_ROW
+    movz $a3, $t1, $t2
+    move $a0, $s0
     jal .Ldraw_row
-    li $a1, 62
-
-    lui $a3, %hi(money_label)
-    addiu $a3, $a3, %lo(money_label)
-    li $a0, 1
-    jal .Ldraw_row
-    li $a1, 86
-
-    lui $a3, %hi(community_label)
-    addiu $a3, $a3, %lo(community_label)
-    li $a0, COMMUNITY_ROW
-    jal .Ldraw_row
-    li $a1, 110
-
-    lui $a3, %hi(shrine_label)
-    addiu $a3, $a3, %lo(shrine_label)
-    li $a0, SHRINE_ROW
-    jal .Ldraw_row
-    li $a1, 134
-
-    lui $a3, %hi(shrine_selection_label)
-    addiu $a3, $a3, %lo(shrine_selection_label)
-    li $a0, SHRINE_SELECTION_ROW
-    jal .Ldraw_row
-    li $a1, 158
-
-    lui $a3, %hi(battle_drop_label)
-    addiu $a3, $a3, %lo(battle_drop_label)
-    li $a0, BATTLE_DROP_ROW
-    jal .Ldraw_row
-    li $a1, 182
-
-    lui $a3, %hi(bench_xp_label)
-    addiu $a3, $a3, %lo(bench_xp_label)
-    li $a0, BENCH_XP_ROW
-    jal .Ldraw_row
-    li $a1, 206
+    move $a1, $s2
+    addiu $s0, $s0, 1
+    bne $s0, $s1, .Ldraw_row_loop
+    addiu $s2, $s2, 25
 
     lui $t0, %hi(menu_row)
     lw $t0, %lo(menu_row)($t0)
@@ -156,15 +173,18 @@ p3p_config_draw_hook:
     lw $a0, PALETTE_DESCRIPTION($s5)
     li $t2, LABEL_X
     jal .Ldraw_text
-    li $t3, 236
+    li $t3, 220
 
 .Ldraw_return:
-    lw $ra, 28($sp)
+    lw $ra, 44($sp)
+    lw $s0, 32($sp)
+    lw $s1, 36($sp)
+    lw $s2, 40($sp)
     lw $s3, 8($sp)
     lw $s4, 12($sp)
     lw $s5, 24($sp)
     jr $ra
-    addiu $sp, $sp, 32
+    addiu $sp, $sp, 48
 .Lconfig_draw:
     addiu $sp, $sp, -160
     j game_config_draw_continue
