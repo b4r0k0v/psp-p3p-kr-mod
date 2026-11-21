@@ -20,6 +20,8 @@ HOOKS = (
     (0x126ECC, (0x27BDFF60, 0xAFB20048), 'p3p_config_draw_hook'),
     (0xC1B0, (0x94430010, 0x0223182B), 'p3p_community_affinity_hook'),
     (0x175AE8, (0x27BDFFF0, 0xAFBF0000), 'p3p_shrine_wait_hook'),
+    (0x1757D4, (0x27BDFFF0, 0xAFBF0004), 'p3p_shrine_selection_hook'),
+    (0x310F9C, (0xAFBF0014, 0xAFB40010), 'p3p_shrine_draw_hook'),
 )
 FUSION_HOOKS = (
     (0x57608, (0x12E00042, 0x0040A021), 'p3p_fusion_pool_hook'),
@@ -104,7 +106,10 @@ def patch_eboot(decrypted, payload):
     require(payload_section[3] == PAYLOAD_ADDRESS and len(payload_code) % 4 == 0, 'Unexpected payload layout')
     symbols = mod.symbols()
     settings = symbols['p3p_reward_settings'] - PAYLOAD_ADDRESS
-    setting_symbols = ('p3p_xp_mode', 'p3p_money_mode', 'p3p_community_affinity_zero', 'p3p_shrine_wait_one_day')
+    setting_symbols = (
+        'p3p_xp_mode', 'p3p_money_mode', 'p3p_community_affinity_zero',
+        'p3p_shrine_wait_one_day', 'p3p_shrine_card_selection',
+    )
     settings_end = settings + 8 + 4*len(setting_symbols)
     require(payload_code[settings:settings_end] == b'P3PRWD01' + bytes(4*len(setting_symbols)),
             'Runtime settings must start at AUTO and Off')

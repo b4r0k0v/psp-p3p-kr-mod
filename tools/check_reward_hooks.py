@@ -15,7 +15,8 @@ MASK = 0xffffffff
 HOOK_SITES = {name: address for address, _, name in HOOKS}
 TEST_SITES = {
     HOOK_SITES[name] for name in (
-        'p3p_community_affinity_hook', 'p3p_config_input_hook', 'p3p_shrine_wait_hook'
+        'p3p_community_affinity_hook', 'p3p_config_input_hook', 'p3p_shrine_wait_hook',
+        'p3p_shrine_selection_hook',
     )
 }
 
@@ -173,12 +174,17 @@ def check_menu(runner):
     row, state = symbols['menu_row'], symbols['menu_state']
     xp, money = symbols['p3p_xp_mode'], symbols['p3p_money_mode']
     affinity, shrine = symbols['p3p_community_affinity_zero'], symbols['p3p_shrine_wait_one_day']
-    memory = {row: 2, state: 0, affinity: 0, shrine: 0, xp: 0, money: 0, 0x100018: 0}
+    selection = symbols['p3p_shrine_card_selection']
+    memory = {row: 2, state: 0, affinity: 0, shrine: 0, selection: 0, xp: 0, money: 0, 0x100018: 0}
 
     assert push(1) == 0x12888c and memory[row] == 0 and memory[state] == 1
     push(0x20)
     assert memory[xp] == 0
     memory[state] = 2
+    push(0x10)
+    assert memory[row] == 4
+    push(0x20)
+    assert (memory[selection], memory[shrine]) == (1, 0)
     push(0x10)
     assert memory[row] == 3
     push(0x20)
@@ -191,6 +197,7 @@ def check_menu(runner):
     assert memory[affinity] == 1
     push(0x80)
     assert memory[affinity] == 0
+    push(0x40)
     push(0x40)
     push(0x40)
     assert memory[row] == 0
@@ -255,6 +262,38 @@ def check_shrine(runner):
     assert exercise(1, 601, 2) == 2
 
 
+def check_shrine_selection(runner):
+    context, code, stack = 0x300000, 0x200000, 0x400000
+    start = HOOK_SITES['p3p_shrine_selection_hook']
+    original = runner.symbols['game_flow_random_continue'] - runner.base
+    choose = runner.symbols['p3p_shrine_choose_card'] - runner.base
+    link = runner.symbols['game_flow_command_return']
+    toggle = runner.symbols['p3p_shrine_card_selection']
+    signature = {163: 0x00040007, 355: 0x002e0008, 423: 0x50040008, 444: 0x00ff001d}
+
+    def exercise(enabled, index, return_address, words, selected):
+        memory = {context + 0x124: code, toggle: enabled}
+        memory.update({code + i * 4: word for i, word in words.items()})
+        before = memory.copy()
+        stop, regs = runner.run(
+            start, {original, choose}, {17: context, 19: index, 29: stack, 31: return_address}, memory,
+        )
+        assert regs[31] == return_address
+        if selected:
+            assert stop == choose and regs[4] == context and regs[29] == stack
+        else:
+            assert stop == original and regs[29] == stack - 16
+            before[stack - 12] = return_address
+        assert memory == before
+
+    exercise(1, 445, link, signature, True)
+    exercise(0, 445, link, {}, False)
+    exercise(1, 455, link, {}, False)
+    exercise(1, 445, link + 4, {}, False)
+    for index in signature:
+        exercise(1, 445, link, {**signature, index: 0}, False)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('iso', type=Path)
@@ -271,7 +310,7 @@ def main():
     symbols = payload.symbols()
     for base in (0, 0x08804000):
         runner = HookRunner(eboot, symbols, base)
-        for check in (check_affinity, check_menu, check_shrine):
+        for check in (check_affinity, check_menu, check_shrine, check_shrine_selection):
             try:
                 check(runner)
             except AssertionError as error:

@@ -143,3 +143,6 @@ p3p_community_affinity_zero:
 .global p3p_shrine_wait_one_day
 p3p_shrine_wait_one_day:
     .word 0
+.global p3p_shrine_card_selection
+p3p_shrine_card_selection:
+    .word 0
