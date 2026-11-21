@@ -56,4 +56,8 @@ python3 tools/build_reward_iso.py \
 - `src/`에 배율 메뉴, 보상 지급 및 수동 계승 코드가 있다.
 - `tools/build_reward_iso.py`는 패치된 ISO를 생성한다.
 - `tools/test_battle_rewards.py`는 PPSSPP 원격 디버거로 보상 지급을 확인하는 개발용 스크립트다.
+- `tools/check_reward_hooks.py`는 패치된 ISO에서 커뮤 판정, 설정 메뉴 입력, 신사 복제 대기 훅을 검사한다. `make` 후 `python3 tools/check_reward_hooks.py 패치된.iso`로 실행한다. ISO에 사용한 페이로드가 기본 빌드와 다르면 `--payload`로 그 파일을 지정한다.
+- `tools/scan_game_text.py`는 한국판 글꼴로 인코딩된 문자열을 찾는다. `python3 tools/scan_game_text.py --charset P3P_Korean.tsv EBOOT.BIN '대사 음성'`처럼 로컬 문자표와 검색할 바이너리를 지정한다.
+- `tools/InspectFunctions.java`는 Ghidra Headless에서 `-scriptPath tools -postScript InspectFunctions.java 175ae8`처럼 함수 시작 주소를 16진수로 받아 디컴파일한다.
+- `tools/capture_ppsspp.py`는 PPSSPP 원격 디버거에 연결해 PNG를 저장한다. `python3 tools/capture_ppsspp.py --host 호스트 --port 포트 화면.png`로 실행한다. [PPSSPP 원격 디버거 프로토콜](https://github.com/hrydgard/ppsspp/blob/master/docs/WebSocketDebugger.md)
 - 로컬 `docs/`와 `reverse/`에 기능 명세, 작업 계획, 분석 기록을 보관한다.
