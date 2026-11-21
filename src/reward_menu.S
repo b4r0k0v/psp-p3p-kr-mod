@@ -15,7 +15,8 @@
 .equ OPEN_TIME_US, 120000
 .equ CLOSE_TIME_US, 90000
 .equ COMMUNITY_ROW, 2
-.equ ROW_COUNT, 3
+.equ SHRINE_ROW, 3
+.equ ROW_COUNT, 4
 
 .equ PALETTE_TITLE, 0
 .equ PALETTE_SELECTED_TEXT, 4
@@ -96,8 +97,8 @@ p3p_config_input_hook:
     sll $t3, $t1, 2
     addu $t2, $t2, $t3
     lw $t3, 0($t2)
-    li $t4, COMMUNITY_ROW
-    beq $t1, $t4, .Ltoggle_community
+    sltiu $t4, $t1, COMMUNITY_ROW
+    beqz $t4, .Ltoggle_setting
     nop
     addu $t3, $t3, $t0
     li $t0, 5
@@ -110,7 +111,7 @@ p3p_config_input_hook:
     li $t3, 4
     b .Lstore_mode
     nop
-.Ltoggle_community:
+.Ltoggle_setting:
     xori $t3, $t3, 1
 .Lstore_mode:
     j game_config_input_return
@@ -208,7 +209,7 @@ p3p_config_draw_hook:
     addiu $a3, $a3, %lo(menu_title)
     lw $a0, PALETTE_TITLE($s5)
     li $t2, LABEL_X
-    li $t3, 66
+    li $t3, 58
     jal .Ldraw_text
     nop
 
@@ -216,19 +217,25 @@ p3p_config_draw_hook:
     addiu $a3, $a3, %lo(xp_label)
     move $a0, $zero
     jal .Ldraw_row
-    li $a1, 108
+    li $a1, 94
 
     lui $a3, %hi(money_label)
     addiu $a3, $a3, %lo(money_label)
     li $a0, 1
     jal .Ldraw_row
-    li $a1, 137
+    li $a1, 119
 
     lui $a3, %hi(community_label)
     addiu $a3, $a3, %lo(community_label)
     li $a0, COMMUNITY_ROW
     jal .Ldraw_row
-    li $a1, 166
+    li $a1, 144
+
+    lui $a3, %hi(shrine_label)
+    addiu $a3, $a3, %lo(shrine_label)
+    li $a0, SHRINE_ROW
+    jal .Ldraw_row
+    li $a1, 169
 
     lui $t0, %hi(menu_row)
     lw $t0, %lo(menu_row)($t0)
@@ -239,12 +246,16 @@ p3p_config_draw_hook:
     movn $a3, $t1, $t0
     lui $t1, %hi(community_description)
     addiu $t1, $t1, %lo(community_description)
-    xori $t0, $t0, COMMUNITY_ROW
+    xori $t2, $t0, COMMUNITY_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(shrine_description)
+    addiu $t1, $t1, %lo(shrine_description)
+    xori $t0, $t0, SHRINE_ROW
     movz $a3, $t1, $t0
     lw $a0, PALETTE_DESCRIPTION($s5)
     li $t2, LABEL_X
     jal .Ldraw_text
-    li $t3, 194
+    li $t3, 197
 
 .Ldraw_return:
     lw $ra, 28($sp)
@@ -304,8 +315,8 @@ p3p_config_draw_hook:
 
     lw $t0, 20($sp)
     lw $t1, 8($sp)
-    li $t2, COMMUNITY_ROW
-    beq $t0, $t2, .Ldraw_toggle
+    sltiu $t2, $t0, COMMUNITY_ROW
+    beqz $t2, .Ldraw_toggle
     nop
     sltiu $t0, $t1, 5
     movz $t1, $zero, $t0
@@ -425,6 +436,10 @@ community_label:
     # 커뮤 랭크업 필요 호감도 0
     .byte 0x91, 0xfa, 0x89, 0xf3, 0x20, 0x88, 0x9e, 0x92, 0xc2, 0x8d, 0xfe, 0x20
     .byte 0x94, 0x9f, 0x8e, 0xc9, 0x20, 0x94, 0xd6, 0x83, 0x8b, 0x86, 0xee, 0x20, '0', 0
+shrine_label:
+    # 스킬 카드 복제 대기 제거
+    .byte 0x8c, 0xe3, 0x92, 0xcc, 0x20, 0x91, 0xe6, 0x87, 0x9e, 0x20
+    .byte 0x8a, 0xc8, 0x8f, 0xc7, 0x20, 0x86, 0xc6, 0x84, 0xa3, 0x20, 0x8f, 0xc7, 0x83, 0xa8, 0
 xp_description:
     # 전투에서 얻는 경험치에 적용됩니다.
     .byte 0x8f, 0xbf, 0x93, 0x8e, 0x8e, 0x86, 0x8b, 0xf8, 0x20, 0x8d, 0xf9, 0x86, 0x9d, 0x20
@@ -439,6 +454,11 @@ community_description:
     # 랭크업 판정에만 적용됩니다.
     .byte 0x88, 0x9e, 0x92, 0xc2, 0x8d, 0xfe, 0x20, 0x93, 0xbe, 0x8f, 0xc5, 0x8e, 0x86, 0x89
     .byte 0x8b, 0x20, 0x8f, 0xbe, 0x8e, 0xd0, 0x87, 0x84, 0x86, 0xaa, 0x86, 0xb4, 0x2e, 0x00
+shrine_description:
+    # 맡긴 카드를 당일에 받을 수 있습니다.
+    .byte 0x89, 0x96, 0x84, 0xa5, 0x20, 0x91, 0xe6, 0x87, 0x9e, 0x88, 0xf9, 0x20
+    .byte 0x86, 0xc2, 0x8f, 0x92, 0x8e, 0x86, 0x20, 0x8a, 0x8f, 0x8e, 0xfe, 0x20
+    .byte 0x8c, 0xc1, 0x20, 0x8f, 0x99, 0x8c, 0xe9, 0x86, 0xaa, 0x86, 0xb4, 0x2e, 0
 .balign 4
 toggle_labels:
     .asciz "ON"
