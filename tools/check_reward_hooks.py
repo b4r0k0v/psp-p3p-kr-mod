@@ -16,7 +16,8 @@ HOOK_SITES = {name: address for address, _, name in HOOKS}
 TEST_SITES = {
     HOOK_SITES[name] for name in (
         'p3p_community_affinity_hook', 'p3p_config_input_hook', 'p3p_shrine_wait_hook',
-        'p3p_shrine_selection_hook',
+        'p3p_shrine_selection_hook', 'p3p_battle_drop_hook',
+        'p3p_battle_drop_grant_hook', 'p3p_battle_result_draw_hook',
     )
 }
 
@@ -174,13 +175,20 @@ def check_menu(runner):
     row, state = symbols['menu_row'], symbols['menu_state']
     xp, money = symbols['p3p_xp_mode'], symbols['p3p_money_mode']
     affinity, shrine = symbols['p3p_community_affinity_zero'], symbols['p3p_shrine_wait_one_day']
-    selection = symbols['p3p_shrine_card_selection']
-    memory = {row: 2, state: 0, affinity: 0, shrine: 0, selection: 0, xp: 0, money: 0, 0x100018: 0}
+    selection, battle_drop = symbols['p3p_shrine_card_selection'], symbols['p3p_battle_drop_100']
+    memory = {
+        row: 2, state: 0, affinity: 0, shrine: 0, selection: 0,
+        battle_drop: 0, xp: 0, money: 0, 0x100018: 0,
+    }
 
     assert push(1) == 0x12888c and memory[row] == 0 and memory[state] == 1
     push(0x20)
     assert memory[xp] == 0
     memory[state] = 2
+    push(0x10)
+    assert memory[row] == 5
+    push(0x20)
+    assert (memory[battle_drop], memory[selection], memory[shrine]) == (1, 0, 0)
     push(0x10)
     assert memory[row] == 4
     push(0x20)
@@ -197,6 +205,7 @@ def check_menu(runner):
     assert memory[affinity] == 1
     push(0x80)
     assert memory[affinity] == 0
+    push(0x40)
     push(0x40)
     push(0x40)
     push(0x40)
@@ -294,6 +303,57 @@ def check_shrine_selection(runner):
         exercise(1, 445, link, {**signature, index: 0}, False)
 
 
+def check_battle_drop(runner):
+    symbols = runner.symbols
+    toggle = symbols['p3p_battle_drop_100']
+    extra_count = symbols['p3p_extra_drop_count']
+    btl_ptr = symbols['game_battle_state_ptr']
+    btl_obj = 0x500000
+    slot_s0, unit_s2, unit_data, stack = 0x600000, 0x610000, 0x620000, 0x400000
+
+    # Off with empty battle result clears stale overflow drops and resumes original drop code.
+    memory = {toggle: 0, extra_count: 2, btl_ptr: btl_obj, btl_obj + 0xc90: 0, stack: 1}
+    stop, regs = runner.run(
+        HOOK_SITES['p3p_battle_drop_hook'], {0x205c88, 0x205bdc},
+        {2: 1379, 16: slot_s0, 18: unit_s2, 29: stack}, memory,
+    )
+    assert stop == 0x205c88 and regs[17] == 1379 and regs[3] == 1 and memory[extra_count] == 0
+
+    # Off with existing battle items preserves overflow drops.
+    memory = {toggle: 0, extra_count: 2, btl_ptr: btl_obj, btl_obj + 0xc90: 3, stack: 0}
+    stop, regs = runner.run(
+        HOOK_SITES['p3p_battle_drop_hook'], {0x205c88, 0x205bdc},
+        {2: 1521, 16: slot_s0, 18: unit_s2, 29: stack}, memory,
+    )
+    assert stop == 0x205c88 and regs[17] == 1521 and regs[3] == 0 and memory[extra_count] == 2
+
+    # On invokes p3p_collect_enemy_drops(s0, *(s2 + 2648)) and returns via 0x205bdc.
+    def collect_stub(regs, _):
+        assert regs[4] == slot_s0 and regs[5] == unit_data and regs[29] == stack - 16
+        return regs[31]
+
+    memory = {toggle: 1, unit_s2 + 2648: unit_data}
+    stop, regs = runner.run(
+        HOOK_SITES['p3p_battle_drop_hook'], {0x205bdc},
+        {16: slot_s0, 18: unit_s2, 29: stack}, memory,
+        {symbols['p3p_collect_enemy_drops']: collect_stub},
+    )
+    assert stop == 0x205bdc and regs[29] == stack
+
+    # Grant and draw hooks skip helper calls when extra_count is zero.
+    stop, regs = runner.run(
+        HOOK_SITES['p3p_battle_drop_grant_hook'], {0x2531c0},
+        {29: stack}, {extra_count: 0, stack + 16: 0xdeadbeef, stack + 12: 0xcafebabe},
+    )
+    assert stop == 0x2531c0 and regs[31] == 0xdeadbeef and regs[19] == 0xcafebabe
+
+    stop, regs = runner.run(
+        HOOK_SITES['p3p_battle_result_draw_hook'], {0x2526c8},
+        {29: stack}, {extra_count: 0, stack + 116: 0x12345678, stack + 112: 0x87654321},
+    )
+    assert stop == 0x2526c8 and regs[31] == 0x12345678 and regs[30] == 0x87654321
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('iso', type=Path)
@@ -310,7 +370,7 @@ def main():
     symbols = payload.symbols()
     for base in (0, 0x08804000):
         runner = HookRunner(eboot, symbols, base)
-        for check in (check_affinity, check_menu, check_shrine, check_shrine_selection):
+        for check in (check_affinity, check_menu, check_shrine, check_shrine_selection, check_battle_drop):
             try:
                 check(runner)
             except AssertionError as error:

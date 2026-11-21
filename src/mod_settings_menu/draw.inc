@@ -114,6 +114,12 @@ p3p_config_draw_hook:
     jal .Ldraw_row
     li $a1, 176
 
+    lui $a3, %hi(battle_drop_label)
+    addiu $a3, $a3, %lo(battle_drop_label)
+    li $a0, BATTLE_DROP_ROW
+    jal .Ldraw_row
+    li $a1, 201
+
     lui $t0, %hi(menu_row)
     lw $t0, %lo(menu_row)($t0)
     lui $a3, %hi(xp_description)
@@ -131,12 +137,16 @@ p3p_config_draw_hook:
     movz $a3, $t1, $t2
     lui $t1, %hi(shrine_selection_description)
     addiu $t1, $t1, %lo(shrine_selection_description)
-    xori $t0, $t0, SHRINE_SELECTION_ROW
+    xori $t2, $t0, SHRINE_SELECTION_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(battle_drop_description)
+    addiu $t1, $t1, %lo(battle_drop_description)
+    xori $t0, $t0, BATTLE_DROP_ROW
     movz $a3, $t1, $t0
     lw $a0, PALETTE_DESCRIPTION($s5)
     li $t2, LABEL_X
     jal .Ldraw_text
-    li $t3, 208
+    li $t3, 233
 
 .Ldraw_return:
     lw $ra, 28($sp)

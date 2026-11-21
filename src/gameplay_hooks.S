@@ -146,3 +146,6 @@ p3p_shrine_wait_one_day:
 .global p3p_shrine_card_selection
 p3p_shrine_card_selection:
     .word 0
+.global p3p_battle_drop_100
+p3p_battle_drop_100:
+    .word 0
