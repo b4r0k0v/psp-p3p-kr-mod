@@ -82,6 +82,22 @@ static int is_in_list(int cid, const uint16_t *ids, int count)
     return 0;
 }
 
+static int is_in_battle_party(int cid)
+{
+    const uint8_t *btl = game_battle_state_ptr;
+    if (!btl)
+        return 0;
+
+    const uint8_t *node = *(const uint8_t * const *)(btl + 376);
+    for (int guard = 0; node && guard < 8; ++guard) {
+        const uint8_t *unit = *(const uint8_t * const *)(node + 2648);
+        if (unit && *(const uint16_t *)(unit + 2) == (uint16_t)cid)
+            return 1;
+        node = *(const uint8_t * const *)(node + 2652);
+    }
+    return 0;
+}
+
 static int append_uint(char *buf, int pos, uint32_t val)
 {
     if (val >= 10u)
@@ -116,6 +132,8 @@ void p3p_grant_bench_xp(const uint8_t *reward_struct, const uint8_t *battle_inpu
         if (is_in_list(cid, participants, party_count))
             continue;
         if (is_in_list(cid, vanilla_ids, MAX_PARTY_SLOTS))
+            continue;
+        if (is_in_battle_party(cid))
             continue;
         if (!game_is_member_available(cid))
             continue;
