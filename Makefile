@@ -59,7 +59,7 @@ $(BUILD)/%.o: src/%.S | $(BUILD)
 
 $(BUILD)/%.o: src/%.c | $(BUILD)
 	psp-gcc -Wall -Wextra -Werror -Os -G0 -mno-abicalls -fno-pic -ffreestanding \
-		-fno-strict-aliasing -fno-jump-tables -c $< -o $@
+		-fno-strict-aliasing -fno-jump-tables -fno-tree-switch-conversion -c $< -o $@
 
 $(FUSION_HOOKS): $(OBJECTS)
 	$(LINK_PAYLOAD) $(GAMEPLAY_SYMBOLS) \

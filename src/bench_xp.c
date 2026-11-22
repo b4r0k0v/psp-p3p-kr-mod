@@ -48,14 +48,7 @@ extern const uint32_t shrine_palettes[2][4];
 extern void p3p_shrine_rect(uint32_t color, int x, int y, int width, int height);
 extern void p3p_shrine_text(uint32_t color, int x, int y, const char *text);
 extern const char bench_toast_title[];
-extern const char bench_name_2[];
-extern const char bench_name_3[];
-extern const char bench_name_4[];
-extern const char bench_name_5[];
-extern const char bench_name_7[];
-extern const char bench_name_8[];
-extern const char bench_name_9[];
-extern const char bench_name_10[];
+extern const char *p3p_bench_member_name(uint32_t cid);
 
 static int32_t scale_xp(int32_t xp)
 {
@@ -87,21 +80,6 @@ static int is_in_list(int cid, const uint16_t *ids, int count)
             return 1;
     }
     return 0;
-}
-
-static const char *bench_member_name(uint8_t cid)
-{
-    switch (cid) {
-    case 2:  return bench_name_2;
-    case 3:  return bench_name_3;
-    case 4:  return bench_name_4;
-    case 5:  return bench_name_5;
-    case 7:  return bench_name_7;
-    case 8:  return bench_name_8;
-    case 9:  return bench_name_9;
-    case 10: return bench_name_10;
-    default: return bench_name_2;
-    }
 }
 
 static int append_uint(char *buf, int pos, uint32_t val)
@@ -232,7 +210,7 @@ void p3p_draw_bench_toast(void)
         uint8_t new_lv = p3p_bench_toast_state.entries[i].new_lv;
         int y = box_y + 21 + (int)i * 16;
 
-        p3p_shrine_text(text_color, box_x + 8, y, bench_member_name(cid));
+        p3p_shrine_text(text_color, box_x + 8, y, p3p_bench_member_name(cid));
 
         char buf[16];
         int pos = 0;

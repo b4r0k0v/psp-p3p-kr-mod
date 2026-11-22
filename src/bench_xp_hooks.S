@@ -23,6 +23,40 @@ p3p_bench_xp_hook:
     j game_battle_grant_continue
     sw $s0, 0($sp)
 
+.global p3p_bench_member_name
+p3p_bench_member_name:
+    lui $v0, %hi(bench_name_2)
+    addiu $v0, $v0, %lo(bench_name_2)
+    lui $t0, %hi(bench_name_3)
+    addiu $t0, $t0, %lo(bench_name_3)
+    xori $t1, $a0, 3
+    movz $v0, $t0, $t1
+    lui $t0, %hi(bench_name_4)
+    addiu $t0, $t0, %lo(bench_name_4)
+    xori $t1, $a0, 4
+    movz $v0, $t0, $t1
+    lui $t0, %hi(bench_name_5)
+    addiu $t0, $t0, %lo(bench_name_5)
+    xori $t1, $a0, 5
+    movz $v0, $t0, $t1
+    lui $t0, %hi(bench_name_7)
+    addiu $t0, $t0, %lo(bench_name_7)
+    xori $t1, $a0, 7
+    movz $v0, $t0, $t1
+    lui $t0, %hi(bench_name_8)
+    addiu $t0, $t0, %lo(bench_name_8)
+    xori $t1, $a0, 8
+    movz $v0, $t0, $t1
+    lui $t0, %hi(bench_name_9)
+    addiu $t0, $t0, %lo(bench_name_9)
+    xori $t1, $a0, 9
+    movz $v0, $t0, $t1
+    lui $t0, %hi(bench_name_10)
+    addiu $t0, $t0, %lo(bench_name_10)
+    xori $t1, $a0, 10
+    jr $ra
+    movz $v0, $t0, $t1
+
 .global bench_toast_title
 bench_toast_title:
     # 벤치 레벨업
