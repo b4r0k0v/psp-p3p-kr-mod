@@ -54,6 +54,18 @@ p3p_shrine_draw_hook:
     lw $a0, 4($sp)
     addiu $sp, $sp, 16
 .Lframe_finish:
+    lui $t0, %hi(p3p_bench_toast_count)
+    lw $t0, %lo(p3p_bench_toast_count)($t0)
+    beqz $t0, .Lframe_done
+    nop
+    addiu $sp, $sp, -16
+    sw $v0, 0($sp)
+    jal p3p_draw_bench_toast
+    sw $a0, 4($sp)
+    lw $v0, 0($sp)
+    lw $a0, 4($sp)
+    addiu $sp, $sp, 16
+.Lframe_done:
     j game_frame_finish_continue
     nop
 
