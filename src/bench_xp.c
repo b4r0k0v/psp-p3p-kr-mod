@@ -218,19 +218,19 @@ void p3p_draw_bench_toast(void)
     uint32_t accent_color = (pal[2] & 0xffffff00u) | alpha;
     uint32_t text_color = 0xffffff00u | alpha;
 
-    int box_w = 180;
-    int box_h = 26 + (int)count * 18;
+    int box_w = 166;
+    int box_h = 22 + (int)count * 16;
     int box_x = 12;
-    int box_y = 256 - box_h;
+    int box_y = 10;
 
     p3p_shrine_rect(bg, box_x, box_y, box_w, box_h);
-    p3p_shrine_text(accent_color, box_x + 8, box_y + 5, bench_toast_title);
+    p3p_shrine_text(accent_color, box_x + 8, box_y + 4, bench_toast_title);
 
     for (uint32_t i = 0; i < count; ++i) {
         uint8_t cid = p3p_bench_toast_state.entries[i].cid;
         uint8_t old_lv = p3p_bench_toast_state.entries[i].old_lv;
         uint8_t new_lv = p3p_bench_toast_state.entries[i].new_lv;
-        int y = box_y + 24 + (int)i * 18;
+        int y = box_y + 21 + (int)i * 16;
 
         p3p_shrine_text(text_color, box_x + 8, y, bench_member_name(cid));
 
@@ -247,6 +247,6 @@ void p3p_draw_bench_toast(void)
         pos = append_uint(buf, pos, new_lv);
         buf[pos] = 0;
 
-        p3p_shrine_text(accent_color, box_x + 86, y, buf);
+        p3p_shrine_text(accent_color, box_x + 80, y, buf);
     }
 }
