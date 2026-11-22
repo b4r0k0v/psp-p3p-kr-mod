@@ -142,6 +142,9 @@ void p3p_grant_bench_xp(const uint8_t *reward_struct, const uint8_t *battle_inpu
         if (!rec)
             continue;
 
+        if (*(const uint16_t *)(rec - 0x80) == 0)
+            continue;
+
         uint32_t lv = game_persona_level(rec);
         if (lv >= MAX_LEVEL)
             continue;
