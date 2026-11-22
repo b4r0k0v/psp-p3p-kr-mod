@@ -124,6 +124,49 @@ p3p_coin_hook:
     j game_coin_reward_continue
     ori $a0, $a0, 0x967f
 
+.global p3p_split_xp_hook
+p3p_split_xp_hook:
+    lui $t0, %hi(p3p_xp_mode)
+    lw $t0, %lo(p3p_xp_mode)($t0)
+    beqz $t0, .Lsplit_resume
+    sltiu $t2, $t0, 5
+    beqz $t2, .Lsplit_resume
+    nop
+    blez $a1, .Lsplit_resume
+    andi $t1, $a0, 0xffff
+    addiu $t2, $t1, -2
+    sltiu $t2, $t2, 9
+    beqz $t2, .Lsplit_resume
+    nop
+    addiu $sp, $sp, -16
+    sw $ra, 12($sp)
+    sw $a0, 8($sp)
+    sw $a1, 4($sp)
+    jal game_companion_record
+    move $a0, $t1
+    beqz $v0, .Lsplit_pop
+    nop
+    jal game_persona_level
+    move $a0, $v0
+    sltiu $t2, $v0, 99
+    beqz $t2, .Lsplit_pop
+    nop
+    lw $a1, 4($sp)
+    lui $t0, %hi(p3p_xp_mode)
+    lw $t0, %lo(p3p_xp_mode)($t0)
+    ori $t1, $zero, XP_CAP
+    scale_reward $a1
+    sw $a1, 4($sp)
+.Lsplit_pop:
+    lw $ra, 12($sp)
+    lw $a0, 8($sp)
+    lw $a1, 4($sp)
+    addiu $sp, $sp, 16
+.Lsplit_resume:
+    addiu $sp, $sp, -160
+    j game_split_xp_continue
+    sw $s1, 148($sp)
+
 #include "progression_hooks.inc"
 
 .balign 4

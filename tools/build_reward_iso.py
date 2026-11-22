@@ -26,6 +26,7 @@ HOOKS = (
     (0x2531B8, (0x8FBF0010, 0x8FB3000C), 'p3p_battle_drop_grant_hook'),
     (0x2526C0, (0x8FBF0074, 0x8FBE0070), 'p3p_battle_result_draw_hook'),
     (0x2530AC, (0x27BDFFE0, 0xAFB00000), 'p3p_bench_xp_hook'),
+    (0x254DE8, (0x27BDFF60, 0xAFB10094), 'p3p_split_xp_hook'),
 )
 FUSION_HOOKS = (
     (0x57608, (0x12E00042, 0x0040A021), 'p3p_fusion_pool_hook'),

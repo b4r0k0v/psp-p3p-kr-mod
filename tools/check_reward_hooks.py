@@ -18,6 +18,7 @@ TEST_SITES = {
         'p3p_community_affinity_hook', 'p3p_config_input_hook', 'p3p_shrine_wait_hook',
         'p3p_shrine_selection_hook', 'p3p_battle_drop_hook',
         'p3p_battle_drop_grant_hook', 'p3p_battle_result_draw_hook', 'p3p_bench_xp_hook',
+        'p3p_split_xp_hook',
     )
 }
 
@@ -109,9 +110,14 @@ class HookRunner:
                 case 0:
                     match word & 63:
                         case 0: registers_full[rd] = right << ((word >> 6) & 31)
+                        case 2: registers_full[rd] = right >> ((word >> 6) & 31)
+                        case 4: registers_full[rd] = right << (left & 31)
                         case 8: branch_target = left
                         case 10:
                             if right == 0:
+                                registers_full[rd] = left
+                        case 11:
+                            if right != 0:
                                 registers_full[rd] = left
                         case 33: registers_full[rd] = left + right
                         case 35: registers_full[rd] = left - right
@@ -123,10 +129,16 @@ class HookRunner:
                     branch_target = ((pc + 4) & 0xf0000000) | ((word & 0x3ffffff) << 2)
                     if op == 3:
                         registers_full[31] = pc + 8
-                case 1 | 4 | 5:
+                case 1 | 4 | 5 | 6 | 7:
                     if op == 1:
                         assert rt == 1, f'Unsupported REGIMM branch at {pc:#x}'
-                    take = {1: left < 0x80000000, 4: left == right, 5: left != right}[op]
+                    take = {
+                        1: left < 0x80000000,
+                        4: left == right,
+                        5: left != right,
+                        6: left == 0 or left >= 0x80000000,
+                        7: 0 < left < 0x80000000,
+                    }[op]
                     branch_target = pc + 4 + displacement * 4 if take else pc + 8
                 case 9: registers_full[rt] = left + displacement
                 case 11: registers_full[rt] = int(left < (displacement & MASK))
@@ -407,6 +419,59 @@ def check_bench_xp(runner):
     assert memory[stack - 32] == saved_s0
 
 
+def check_split_xp(runner):
+    symbols = runner.symbols
+    xp_mode = symbols['p3p_xp_mode']
+    start = HOOK_SITES['p3p_split_xp_hook']
+    stack, orig_ra, saved_s1 = 0x400000, 0x08a5501c, 0x11223344
+    rec_ptr = 0x520000
+
+    def exercise(mode, cid, exp, level, *, valid_rec=True):
+        called = []
+
+        def record_stub(regs, _):
+            called.append(('record', regs[4]))
+            regs[2] = rec_ptr if valid_rec else 0
+            return regs[31]
+
+        def level_stub(regs, _):
+            called.append(('level', regs[4]))
+            regs[2] = level
+            return regs[31]
+
+        memory = {xp_mode: mode}
+        stop, regs = runner.run(
+            start, {0x254df0},
+            {4: cid, 5: exp, 17: saved_s1, 29: stack, 31: orig_ra}, memory,
+            {
+                symbols['game_companion_record']: record_stub,
+                symbols['game_persona_level']: level_stub,
+            },
+        )
+        assert stop == 0x254df0 and regs[29] == stack - 160
+        assert regs[4] == cid and regs[31] == orig_ra
+        assert memory[stack - 160 + 148] == saved_s1
+        return regs[5], called
+
+    # AUTO leaves exp untouched and skips helper calls.
+    out, called = exercise(0, 2, 101, 10)
+    assert out == 101 and called == []
+
+    # Manual multipliers scale by 1.5, 2, 4, 8 and clamp to 65535.
+    for mode, expected in ((1, 151), (2, 202), (3, 404), (4, 808)):
+        out, called = exercise(mode, 2, 101, 10)
+        assert out == expected and called == [('record', 2), ('level', rec_ptr)]
+    assert exercise(2, 5, 40000, 50)[0] == 65535
+
+    # Level 99, non-positive exp, invalid companion id, or null record skip scaling.
+    assert exercise(4, 2, 101, 99)[0] == 101
+    assert exercise(4, 2, 0, 10)[0] == 0
+    assert exercise(4, 2, 0xffffffff, 10)[0] == 0xffffffff
+    assert exercise(4, 1, 101, 10)[0] == 101
+    assert exercise(4, 11, 101, 10)[0] == 101
+    assert exercise(4, 2, 101, 10, valid_rec=False)[0] == 101
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('iso', type=Path)
@@ -426,6 +491,7 @@ def main():
         for check in (
             check_affinity, check_menu, check_shrine,
             check_shrine_selection, check_battle_drop, check_bench_xp,
+            check_split_xp,
         ):
             try:
                 check(runner)

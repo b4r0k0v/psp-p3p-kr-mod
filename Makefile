@@ -27,6 +27,7 @@ GAMEPLAY_SYMBOLS := \
 	--defsym game_battle_drop_grant_continue=0x2531c0 \
 	--defsym game_battle_result_draw_continue=0x2526c8 \
 	--defsym game_battle_grant_continue=0x2530b4 \
+	--defsym game_split_xp_continue=0x254df0 \
 	--defsym game_is_member_available=0x112ff0 \
 	--defsym game_companion_record=0xd83c \
 	--defsym game_persona_level=0xc728 \
