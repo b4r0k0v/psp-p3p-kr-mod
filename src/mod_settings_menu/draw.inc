@@ -124,10 +124,6 @@ p3p_config_draw_hook:
     addiu $t1, $t1, %lo(shrine_label)
     xori $t2, $s0, SHRINE_ROW
     movz $a3, $t1, $t2
-    lui $t1, %hi(shrine_selection_label)
-    addiu $t1, $t1, %lo(shrine_selection_label)
-    xori $t2, $s0, SHRINE_SELECTION_ROW
-    movz $a3, $t1, $t2
     lui $t1, %hi(battle_drop_label)
     addiu $t1, $t1, %lo(battle_drop_label)
     xori $t2, $s0, BATTLE_DROP_ROW
@@ -157,10 +153,6 @@ p3p_config_draw_hook:
     lui $t1, %hi(shrine_description)
     addiu $t1, $t1, %lo(shrine_description)
     xori $t2, $t0, SHRINE_ROW
-    movz $a3, $t1, $t2
-    lui $t1, %hi(shrine_selection_description)
-    addiu $t1, $t1, %lo(shrine_selection_description)
-    xori $t2, $t0, SHRINE_SELECTION_ROW
     movz $a3, $t1, $t2
     lui $t1, %hi(battle_drop_description)
     addiu $t1, $t1, %lo(battle_drop_description)

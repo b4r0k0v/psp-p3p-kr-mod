@@ -187,10 +187,9 @@ def check_menu(runner):
     row, scroll, state = symbols['menu_row'], symbols['menu_scroll'], symbols['menu_state']
     xp, money = symbols['p3p_xp_mode'], symbols['p3p_money_mode']
     affinity, shrine = symbols['p3p_community_affinity_zero'], symbols['p3p_shrine_wait_one_day']
-    selection, battle_drop = symbols['p3p_shrine_card_selection'], symbols['p3p_battle_drop_100']
-    bench_xp = symbols['p3p_bench_xp']
+    battle_drop, bench_xp = symbols['p3p_battle_drop_100'], symbols['p3p_bench_xp']
     memory = {
-        row: 2, scroll: 3, state: 0, affinity: 0, shrine: 0, selection: 0,
+        row: 2, scroll: 3, state: 0, affinity: 0, shrine: 0,
         battle_drop: 0, bench_xp: 0, xp: 0, money: 0, 0x100018: 0,
     }
 
@@ -199,30 +198,25 @@ def check_menu(runner):
     assert memory[xp] == 0
     memory[state] = 2
     push(0x10)
-    assert memory[row] == 6 and memory[scroll] == 2
+    assert memory[row] == 5 and memory[scroll] == 1
     push(0x20)
-    assert (memory[bench_xp], memory[battle_drop], memory[selection], memory[shrine]) == (1, 0, 0, 0)
+    assert (memory[bench_xp], memory[battle_drop], memory[shrine]) == (1, 0, 0)
     push(0x10)
-    assert memory[row] == 5 and memory[scroll] == 2
+    assert memory[row] == 4 and memory[scroll] == 1
     push(0x20)
-    assert (memory[battle_drop], memory[selection], memory[shrine]) == (1, 0, 0)
+    assert (memory[battle_drop], memory[shrine]) == (1, 0)
     push(0x10)
-    assert memory[row] == 4 and memory[scroll] == 2
-    push(0x20)
-    assert (memory[selection], memory[shrine]) == (1, 0)
-    push(0x10)
-    assert memory[row] == 3 and memory[scroll] == 2
+    assert memory[row] == 3 and memory[scroll] == 1
     push(0x20)
     assert memory[shrine] == 1
     push(0x10)
-    assert memory[row] == 2 and memory[scroll] == 2
+    assert memory[row] == 2 and memory[scroll] == 1
     push(0x20)
     assert (memory[affinity], memory[shrine], memory[xp], memory[money]) == (1, 1, 0, 0)
     push(0xa0)
     assert memory[affinity] == 1
     push(0x80)
     assert memory[affinity] == 0
-    push(0x40)
     push(0x40)
     push(0x40)
     push(0x40)
@@ -238,14 +232,12 @@ def check_menu(runner):
     assert memory[row] == 1
     push(0x4000 | 0x20)
     assert memory[state] == 3 and memory[money] == 1
-    # Verify downward scroll from row 4 -> 5 -> 6.
+    # Verify downward scroll from row 4 -> 5.
     memory[state] = 2
     memory[row] = 4
     memory[scroll] = 0
     push(0x40)
     assert memory[row] == 5 and memory[scroll] == 1
-    push(0x40)
-    assert memory[row] == 6 and memory[scroll] == 2
     memory[0x100018] = 1
     assert push(1) == 0x128858
 
@@ -303,11 +295,10 @@ def check_shrine_selection(runner):
     original = runner.symbols['game_flow_random_continue'] - runner.base
     choose = runner.symbols['p3p_shrine_choose_card'] - runner.base
     link = runner.symbols['game_flow_command_return']
-    toggle = runner.symbols['p3p_shrine_card_selection']
     signature = {163: 0x00040007, 355: 0x002e0008, 423: 0x50040008, 444: 0x00ff001d}
 
-    def exercise(enabled, index, return_address, words, selected):
-        memory = {context + 0x124: code, toggle: enabled}
+    def exercise(index, return_address, words, selected):
+        memory = {context + 0x124: code}
         memory.update({code + i * 4: word for i, word in words.items()})
         before = memory.copy()
         stop, regs = runner.run(
@@ -321,12 +312,11 @@ def check_shrine_selection(runner):
             before[stack - 12] = return_address
         assert memory == before
 
-    exercise(1, 445, link, signature, True)
-    exercise(0, 445, link, {}, False)
-    exercise(1, 455, link, {}, False)
-    exercise(1, 445, link + 4, {}, False)
+    exercise(445, link, signature, True)
+    exercise(455, link, {}, False)
+    exercise(445, link + 4, {}, False)
     for index in signature:
-        exercise(1, 445, link, {**signature, index: 0}, False)
+        exercise(445, link, {**signature, index: 0}, False)
 
 
 def check_battle_drop(runner):

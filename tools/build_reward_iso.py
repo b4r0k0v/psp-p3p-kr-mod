@@ -113,7 +113,7 @@ def patch_eboot(decrypted, payload):
     settings = symbols['p3p_reward_settings'] - PAYLOAD_ADDRESS
     setting_symbols = (
         'p3p_xp_mode', 'p3p_money_mode', 'p3p_community_affinity_zero',
-        'p3p_shrine_wait_one_day', 'p3p_shrine_card_selection', 'p3p_battle_drop_100',
+        'p3p_shrine_wait_one_day', 'p3p_battle_drop_100',
         'p3p_bench_xp',
     )
     settings_end = settings + 8 + 4*len(setting_symbols)

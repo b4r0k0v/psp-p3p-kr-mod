@@ -4,9 +4,6 @@
 .text
 .global p3p_shrine_selection_hook
 p3p_shrine_selection_hook:
-    lui $t0, %hi(p3p_shrine_card_selection)
-    lw $t0, %lo(p3p_shrine_card_selection)($t0)
-    beqz $t0, .Lrandom
     lui $t0, %hi(game_flow_command_return)
     addiu $t0, $t0, %lo(game_flow_command_return)
     bne $ra, $t0, .Lrandom
