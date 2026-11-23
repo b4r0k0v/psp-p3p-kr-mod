@@ -132,6 +132,10 @@ p3p_config_draw_hook:
     addiu $t1, $t1, %lo(bench_xp_label)
     xori $t2, $s0, BENCH_XP_ROW
     movz $a3, $t1, $t2
+    lui $t1, %hi(always_great_label)
+    addiu $t1, $t1, %lo(always_great_label)
+    xori $t2, $s0, ALWAYS_GREAT_ROW
+    movz $a3, $t1, $t2
     move $a0, $s0
     jal .Ldraw_row
     move $a1, $s2
@@ -160,7 +164,11 @@ p3p_config_draw_hook:
     movz $a3, $t1, $t2
     lui $t1, %hi(bench_xp_description)
     addiu $t1, $t1, %lo(bench_xp_description)
-    xori $t0, $t0, BENCH_XP_ROW
+    xori $t2, $t0, BENCH_XP_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(always_great_description)
+    addiu $t1, $t1, %lo(always_great_description)
+    xori $t0, $t0, ALWAYS_GREAT_ROW
     movz $a3, $t1, $t0
     lw $a0, PALETTE_DESCRIPTION($s5)
     li $t2, LABEL_X

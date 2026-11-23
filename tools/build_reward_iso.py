@@ -25,6 +25,9 @@ HOOKS = (
     (0x205C80, (0x00408821, 0x8FA30000), 'p3p_battle_drop_hook'),
     (0x2530AC, (0x27BDFFE0, 0xAFB00000), 'p3p_bench_xp_hook'),
     (0x254DE8, (0x27BDFF60, 0xAFB10094), 'p3p_split_xp_hook'),
+    (0xA3E8, (0x27BDFFF0, 0xAFB10004), 'p3p_set_condition_hook'),
+    (0x9E24, (0x27BDFFF0, 0xAFB00000), 'p3p_add_stamina_hook'),
+    (0x17998, (0x27BDFFD0, 0xAFBF0020), 'p3p_day_condition_hook'),
 )
 FUSION_HOOKS = (
     (0x57608, (0x12E00042, 0x0040A021), 'p3p_fusion_pool_hook'),
@@ -112,7 +115,7 @@ def patch_eboot(decrypted, payload):
     setting_symbols = (
         'p3p_xp_mode', 'p3p_money_mode', 'p3p_community_affinity_zero',
         'p3p_shrine_wait_one_day', 'p3p_battle_drop_100',
-        'p3p_bench_xp',
+        'p3p_bench_xp', 'p3p_always_great',
     )
     settings_end = settings + 8 + 4*len(setting_symbols)
     require(payload_code[settings:settings_end] == b'P3PRWD01' + bytes(4*len(setting_symbols)),

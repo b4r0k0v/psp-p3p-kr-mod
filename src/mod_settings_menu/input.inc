@@ -96,8 +96,14 @@ p3p_config_input_hook:
 .Ltoggle_setting:
     xori $t3, $t3, 1
 .Lstore_mode:
-    j game_config_input_return
     sw $t3, 0($t2)
+    li $t0, ALWAYS_GREAT_ROW
+    bne $t1, $t0, .Lreturn_menu_input
+    nop
+    beqz $t3, .Lreturn_menu_input
+    nop
+    jal p3p_apply_always_great
+    nop
 .Lreturn_menu_input:
     j game_config_input_return
     nop

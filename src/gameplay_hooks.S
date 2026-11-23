@@ -192,3 +192,6 @@ p3p_battle_drop_100:
 .global p3p_bench_xp
 p3p_bench_xp:
     .word 0
+.global p3p_always_great
+p3p_always_great:
+    .word 0

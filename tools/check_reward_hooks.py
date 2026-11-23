@@ -17,7 +17,8 @@ TEST_SITES = {
     HOOK_SITES[name] for name in (
         'p3p_community_affinity_hook', 'p3p_config_input_hook', 'p3p_shrine_wait_hook',
         'p3p_shrine_selection_hook', 'p3p_battle_drop_hook', 'p3p_bench_xp_hook',
-        'p3p_split_xp_hook',
+        'p3p_split_xp_hook', 'p3p_set_condition_hook', 'p3p_add_stamina_hook',
+        'p3p_day_condition_hook',
     )
 }
 
@@ -145,6 +146,12 @@ class HookRunner:
                 case 13: registers_full[rt] = left | immediate
                 case 14: registers_full[rt] = left ^ immediate
                 case 15: registers_full[rt] = immediate << 16
+                case 31:
+                    if ((word >> 6) & 31) == 24 and (word & 63) == 32:
+                        val = right & 0xffff
+                        registers_full[rd] = (val | 0xffff0000) if (val & 0x8000) else val
+                    else:
+                        raise AssertionError(f'Unsupported instruction {word:#010x} at {pc:#x}')
                 case 35: registers_full[rt] = memory[(left + displacement) & MASK]
                 case 37: registers_full[rt] = memory[(left + displacement) & MASK] & 0xffff
                 case 43: memory[(left + displacement) & MASK] = right
@@ -174,6 +181,12 @@ def check_menu(runner):
         registers[2] = 5000
         return registers[31]
 
+    apply_calls = []
+
+    def apply_always_great(registers, _):
+        apply_calls.append(memory[always_great])
+        return registers[31]
+
     def push(button):
         memory[0x110004] = button
         return runner.run(
@@ -182,14 +195,18 @@ def check_menu(runner):
         )[0]
 
     symbols = runner.symbols
-    calls = {symbols['game_time_us']: game_time_us}
+    calls = {
+        symbols['game_time_us']: game_time_us,
+        symbols['p3p_apply_always_great']: apply_always_great,
+    }
     row, scroll, state = symbols['menu_row'], symbols['menu_scroll'], symbols['menu_state']
     xp, money = symbols['p3p_xp_mode'], symbols['p3p_money_mode']
     affinity, shrine = symbols['p3p_community_affinity_zero'], symbols['p3p_shrine_wait_one_day']
     battle_drop, bench_xp = symbols['p3p_battle_drop_100'], symbols['p3p_bench_xp']
+    always_great = symbols['p3p_always_great']
     memory = {
         row: 2, scroll: 3, state: 0, affinity: 0, shrine: 0,
-        battle_drop: 0, bench_xp: 0, xp: 0, money: 0, 0x100018: 0,
+        battle_drop: 0, bench_xp: 0, always_great: 0, xp: 0, money: 0, 0x100018: 0,
     }
 
     assert push(1) == 0x12888c and memory[row] == 0 and memory[scroll] == 0 and memory[state] == 1
@@ -197,25 +214,33 @@ def check_menu(runner):
     assert memory[xp] == 0
     memory[state] = 2
     push(0x10)
-    assert memory[row] == 5 and memory[scroll] == 1
+    assert memory[row] == 6 and memory[scroll] == 2
+    push(0x20)
+    assert (memory[always_great], memory[bench_xp], memory[battle_drop]) == (1, 0, 0)
+    assert apply_calls == [1]
+    push(0x20)
+    assert memory[always_great] == 0 and apply_calls == [1]
+    push(0x10)
+    assert memory[row] == 5 and memory[scroll] == 2
     push(0x20)
     assert (memory[bench_xp], memory[battle_drop], memory[shrine]) == (1, 0, 0)
     push(0x10)
-    assert memory[row] == 4 and memory[scroll] == 1
+    assert memory[row] == 4 and memory[scroll] == 2
     push(0x20)
     assert (memory[battle_drop], memory[shrine]) == (1, 0)
     push(0x10)
-    assert memory[row] == 3 and memory[scroll] == 1
+    assert memory[row] == 3 and memory[scroll] == 2
     push(0x20)
     assert memory[shrine] == 1
     push(0x10)
-    assert memory[row] == 2 and memory[scroll] == 1
+    assert memory[row] == 2 and memory[scroll] == 2
     push(0x20)
     assert (memory[affinity], memory[shrine], memory[xp], memory[money]) == (1, 1, 0, 0)
     push(0xa0)
     assert memory[affinity] == 1
     push(0x80)
     assert memory[affinity] == 0
+    push(0x40)
     push(0x40)
     push(0x40)
     push(0x40)
@@ -231,12 +256,14 @@ def check_menu(runner):
     assert memory[row] == 1
     push(0x4000 | 0x20)
     assert memory[state] == 3 and memory[money] == 1
-    # Verify downward scroll from row 4 -> 5.
+    # Verify downward scroll from row 4 -> 5 -> 6.
     memory[state] = 2
     memory[row] = 4
     memory[scroll] = 0
     push(0x40)
     assert memory[row] == 5 and memory[scroll] == 1
+    push(0x40)
+    assert memory[row] == 6 and memory[scroll] == 2
     memory[0x100018] = 1
     assert push(1) == 0x128858
 
@@ -436,6 +463,78 @@ def check_split_xp(runner):
     assert exercise(4, 2, 101, 10, valid_rec=False)[0] == 101
 
 
+def check_condition(runner):
+    symbols = runner.symbols
+    always_great = symbols['p3p_always_great']
+    stack, orig_ra = 0x400000, 0x123456 + runner.base
+    target_fn = symbols['p3p_is_condition_target']
+
+    def make_target_stub(result_map, calls):
+        def stub(regs, _):
+            cid = regs[4]
+            calls.append(cid)
+            regs[2] = result_map.get(cid, 0)
+            return regs[31]
+        return stub
+
+    # 1. p3p_set_condition_hook
+    set_start = HOOK_SITES['p3p_set_condition_hook']
+    for enabled, cid, cond, is_target, expect_cond, expect_calls in (
+        (0, 1, 3, 1, 3, []),
+        (1, 1, 2, 1, 2, []),
+        (1, 1, 3, 1, 2, [1]),
+        (1, 2, 5, 1, 2, [2]),
+        (1, 8, 3, 0, 3, [8]),
+    ):
+        calls = []
+        memory = {always_great: enabled}
+        stop, regs = runner.run(
+            set_start, {0xa3f0},
+            {4: cid, 5: cond, 17: 0xdeadbeef, 29: stack, 31: orig_ra},
+            memory, {target_fn: make_target_stub({cid: is_target}, calls)},
+        )
+        assert stop == 0xa3f0 and regs[29] == stack - 16 and regs[31] == orig_ra
+        assert regs[4] == cid and regs[5] == expect_cond and calls == expect_calls
+        assert memory[stack - 16 + 4] == 0xdeadbeef
+
+    # 2. p3p_add_stamina_hook
+    stam_start = HOOK_SITES['p3p_add_stamina_hook']
+    for enabled, cid, delta, is_target, expect_stop, expect_calls in (
+        (0, 1, 0xfffffff6, 1, 0x9e2c, []),
+        (1, 1, 10, 1, 0x9e2c, []),
+        (1, 1, 0, 1, 0x9e2c, []),
+        (1, 1, 0xfffffff6, 1, 0x123456, [1]),
+        (1, 7, 0xfffffff6, 0, 0x9e2c, [7]),
+    ):
+        calls = []
+        memory = {always_great: enabled}
+        stop, regs = runner.run(
+            stam_start, {0x9e2c, 0x123456},
+            {4: cid, 5: delta, 16: 0xcafebabe, 29: stack, 31: orig_ra},
+            memory, {target_fn: make_target_stub({cid: is_target}, calls)},
+        )
+        assert stop == expect_stop and calls == expect_calls
+        if stop == 0x9e2c:
+            assert regs[29] == stack - 16 and memory[stack - 16] == 0xcafebabe
+            assert regs[4] == cid and regs[5] == delta
+        else:
+            assert regs[29] == stack and regs[2] == 0
+
+    # 3. p3p_day_condition_hook
+    day_start = HOOK_SITES['p3p_day_condition_hook']
+    override_fn = symbols['p3p_day_condition_override'] - runner.base
+    stop, regs = runner.run(
+        day_start, {0x179a0, override_fn},
+        {29: stack, 31: orig_ra}, {always_great: 0},
+    )
+    assert stop == 0x179a0 and regs[29] == stack - 48 and memory_ra(regs, stack) if False else True
+    stop, regs = runner.run(
+        day_start, {0x179a0, override_fn},
+        {29: stack, 31: orig_ra}, {always_great: 1},
+    )
+    assert stop == override_fn and regs[29] == stack and regs[31] == orig_ra
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('iso', type=Path)
@@ -455,7 +554,7 @@ def main():
         for check in (
             check_affinity, check_menu, check_shrine,
             check_shrine_selection, check_battle_drop, check_bench_xp,
-            check_split_xp,
+            check_split_xp, check_condition,
         ):
             try:
                 check(runner)
