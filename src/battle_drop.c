@@ -7,7 +7,7 @@ typedef struct {
 
 enum {
     MAX_VANILLA_DROPS = 3,
-    MAX_EXTRA_DROPS = 29,
+    MAX_CANDIDATES = 13,
     ENEMY_COUNT = 336,
     ENEMY_RECORD_SIZE = 62,
     ENEMY_UNIT_FLAG = 4,
@@ -21,62 +21,145 @@ enum {
 extern const uint8_t * volatile game_enemy_table_ptr;
 extern uint8_t * volatile game_battle_state_ptr;
 extern int game_flag_get(int flag);
-extern unsigned game_item_count(int item);
-extern void game_item_set(int item, unsigned count);
-extern const char *game_item_name(int item);
-extern void p3p_shrine_text(uint32_t color, int x, int y, const char *text);
+
+typedef struct {
+    uint16_t id;
+    uint16_t qty;
+    uint16_t key;
+    uint8_t priority; /* 1 = 이벤트/스크립트 드롭, 0 = 일반 드롭 */
+    uint8_t pad;
+} BattleDropCandidate;
 
 typedef struct {
     int32_t count;
     uint8_t *owner;
-    BattleDropEntry items[MAX_EXTRA_DROPS];
+    uint32_t rng;
+    uint32_t pad;
+    BattleDropCandidate items[MAX_CANDIDATES];
 } BattleDropState;
 
 _Static_assert(sizeof(BattleDropState) <= 128, "Battle drop state exceeds its allocation");
 
 extern volatile BattleDropState p3p_battle_drop_state;
 
-static void add_drop_item(uint8_t *btl, uint16_t item_id)
+static uint16_t next_rand16(void)
+{
+    uint32_t x = p3p_battle_drop_state.rng;
+    if (!x)
+        x = 0x9e3779b9u;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    p3p_battle_drop_state.rng = x;
+    return (uint16_t)(x >> 16);
+}
+
+static void add_candidate(uint16_t item_id, uint8_t priority)
 {
     if (!item_id)
         return;
 
-    BattleDropEntry *vanilla = (BattleDropEntry *)(btl + RESULT_ITEMS_OFFSET);
-    int32_t *vanilla_count = (int32_t *)(btl + RESULT_COUNT_OFFSET);
-    int count = *vanilla_count;
-    if (count < 0)
-        count = 0;
-    else if (count > MAX_VANILLA_DROPS)
-        count = MAX_VANILLA_DROPS;
-
+    int count = p3p_battle_drop_state.count;
     for (int i = 0; i < count; ++i) {
-        if (vanilla[i].id == item_id) {
-            if (vanilla[i].qty < ITEM_QTY_CAP)
-                ++vanilla[i].qty;
-            return;
-        }
-    }
-
-    if (count < MAX_VANILLA_DROPS) {
-        vanilla[count].id = item_id;
-        vanilla[count].qty = 1;
-        *vanilla_count = count + 1;
-        return;
-    }
-
-    int extra = p3p_battle_drop_state.count;
-    for (int i = 0; i < extra; ++i) {
         if (p3p_battle_drop_state.items[i].id == item_id) {
             if (p3p_battle_drop_state.items[i].qty < ITEM_QTY_CAP)
                 ++p3p_battle_drop_state.items[i].qty;
+            if (priority)
+                p3p_battle_drop_state.items[i].priority = 1;
             return;
         }
     }
 
-    if (extra < MAX_EXTRA_DROPS) {
-        p3p_battle_drop_state.items[extra].id = item_id;
-        p3p_battle_drop_state.items[extra].qty = 1;
-        p3p_battle_drop_state.count = extra + 1;
+    if (count < MAX_CANDIDATES) {
+        p3p_battle_drop_state.items[count].id = item_id;
+        p3p_battle_drop_state.items[count].qty = 1;
+        p3p_battle_drop_state.items[count].key = next_rand16();
+        p3p_battle_drop_state.items[count].priority = priority;
+        p3p_battle_drop_state.items[count].pad = 0;
+        p3p_battle_drop_state.count = count + 1;
+        return;
+    }
+
+    if (priority) {
+        int replace_idx = -1;
+        uint16_t max_key = 0;
+        for (int i = 0; i < count; ++i) {
+            if (p3p_battle_drop_state.items[i].priority == 0 &&
+                (replace_idx < 0 || p3p_battle_drop_state.items[i].key > max_key)) {
+                replace_idx = i;
+                max_key = p3p_battle_drop_state.items[i].key;
+            }
+        }
+        if (replace_idx >= 0) {
+            p3p_battle_drop_state.items[replace_idx].id = item_id;
+            p3p_battle_drop_state.items[replace_idx].qty = 1;
+            p3p_battle_drop_state.items[replace_idx].key = next_rand16();
+            p3p_battle_drop_state.items[replace_idx].priority = 1;
+            p3p_battle_drop_state.items[replace_idx].pad = 0;
+        }
+    }
+}
+
+static void sync_vanilla_slots(uint8_t *btl)
+{
+    BattleDropEntry *vanilla = (BattleDropEntry *)(btl + RESULT_ITEMS_OFFSET);
+    int32_t *vanilla_count = (int32_t *)(btl + RESULT_COUNT_OFFSET);
+    int count = p3p_battle_drop_state.count;
+    int filled = 0;
+
+    for (int i = 0; i < count && filled < MAX_VANILLA_DROPS; ++i) {
+        if (p3p_battle_drop_state.items[i].priority) {
+            vanilla[filled].id = p3p_battle_drop_state.items[i].id;
+            vanilla[filled].qty = p3p_battle_drop_state.items[i].qty;
+            ++filled;
+        }
+    }
+
+    if (filled < MAX_VANILLA_DROPS) {
+        int normal_count = 0;
+        for (int i = 0; i < count; ++i) {
+            if (p3p_battle_drop_state.items[i].priority == 0)
+                ++normal_count;
+        }
+
+        int rem = MAX_VANILLA_DROPS - filled;
+        if (normal_count <= rem) {
+            for (int i = 0; i < count && filled < MAX_VANILLA_DROPS; ++i) {
+                if (p3p_battle_drop_state.items[i].priority == 0) {
+                    vanilla[filled].id = p3p_battle_drop_state.items[i].id;
+                    vanilla[filled].qty = p3p_battle_drop_state.items[i].qty;
+                    ++filled;
+                }
+            }
+        } else {
+            uint32_t picked = 0;
+            for (int step = 0; step < rem; ++step) {
+                int best = -1;
+                uint16_t min_key = 0xffffu;
+                for (int i = 0; i < count; ++i) {
+                    if (p3p_battle_drop_state.items[i].priority != 0)
+                        continue;
+                    if (picked & (1u << i))
+                        continue;
+                    if (best < 0 || p3p_battle_drop_state.items[i].key < min_key) {
+                        best = i;
+                        min_key = p3p_battle_drop_state.items[i].key;
+                    }
+                }
+                if (best < 0)
+                    break;
+                picked |= (1u << best);
+                vanilla[filled].id = p3p_battle_drop_state.items[best].id;
+                vanilla[filled].qty = p3p_battle_drop_state.items[best].qty;
+                ++filled;
+            }
+        }
+    }
+
+    *vanilla_count = filled;
+    for (int i = filled; i < MAX_VANILLA_DROPS; ++i) {
+        vanilla[i].id = 0;
+        vanilla[i].qty = 0;
     }
 }
 
@@ -89,6 +172,7 @@ void p3p_collect_enemy_drops(const uint8_t *slot, const uint8_t *unit_data)
     if (*(int32_t *)(btl + RESULT_COUNT_OFFSET) == 0 || p3p_battle_drop_state.owner != btl) {
         p3p_battle_drop_state.count = 0;
         p3p_battle_drop_state.owner = btl;
+        p3p_battle_drop_state.rng ^= (uint32_t)(uintptr_t)btl + 0x9e3779b9u;
     }
 
     if (unit_data && (*(const uint16_t *)unit_data & ENEMY_UNIT_FLAG)) {
@@ -100,7 +184,7 @@ void p3p_collect_enemy_drops(const uint8_t *slot, const uint8_t *unit_data)
             uint16_t ev_item = *(const uint16_t *)(rec + 52);
             uint8_t ev_rate = rec[54];
             if (ev_item && ev_flag && ev_rate && game_flag_get(ev_flag))
-                add_drop_item(btl, ev_item);
+                add_candidate(ev_item, 1);
 
             for (int i = 0; i < 4; ++i) {
                 uint16_t item = *(const uint16_t *)(rec + 34 + i * 4);
@@ -109,7 +193,7 @@ void p3p_collect_enemy_drops(const uint8_t *slot, const uint8_t *unit_data)
                     continue;
                 if (item >= CONDITIONAL_ITEM_START && game_flag_get(CONDITIONAL_FLAG_BASE - item))
                     continue;
-                add_drop_item(btl, item);
+                add_candidate(item, 0);
             }
         }
     }
@@ -118,68 +202,8 @@ void p3p_collect_enemy_drops(const uint8_t *slot, const uint8_t *unit_data)
         uint16_t script_item = *(const uint16_t *)(slot + 0x80);
         uint8_t script_rate = slot[0x82];
         if (script_item && script_rate)
-            add_drop_item(btl, script_item);
+            add_candidate(script_item, 1);
     }
-}
 
-void p3p_grant_extra_drops(int vanilla_count)
-{
-    int count = p3p_battle_drop_state.count;
-    p3p_battle_drop_state.count = 0;
-    p3p_battle_drop_state.owner = 0;
-    if (vanilla_count != MAX_VANILLA_DROPS)
-        return;
-
-    for (int i = 0; i < count; ++i) {
-        unsigned item = p3p_battle_drop_state.items[i].id;
-        unsigned total = game_item_count(item) + p3p_battle_drop_state.items[i].qty;
-        if (total > ITEM_QTY_CAP)
-            total = ITEM_QTY_CAP;
-        game_item_set(item, total);
-    }
-}
-
-void p3p_draw_extra_drops(const uint8_t *ui)
-{
-    int count = p3p_battle_drop_state.count;
-    if (count <= 0 || !ui)
-        return;
-
-    const uint8_t *state = *(const uint8_t *const *)(ui + 1576);
-    if (!state || *(const int32_t *)(state + 60) != MAX_VANILLA_DROPS)
-        return;
-
-    uint32_t alpha = ui[1098];
-    if (!alpha)
-        return;
-
-    uint32_t color = 0xffffff00u | alpha;
-    int base_x = (int)*(const float *)(ui + 1088);
-    int base_y = (int)*(const float *)(ui + 1092);
-    int step_y = count <= 3 ? 19 : 15;
-    int step_x = count <= 3 ? 18 : 14;
-
-    for (int i = 0; i < count; ++i) {
-        int x = base_x - step_x * (i + 1);
-        int y = base_y + step_y * (i + 1);
-        if (y > 258)
-            break;
-
-        unsigned item = p3p_battle_drop_state.items[i].id;
-        unsigned qty = p3p_battle_drop_state.items[i].qty;
-        if (qty > ITEM_QTY_CAP)
-            qty = ITEM_QTY_CAP;
-
-        p3p_shrine_text(color, x, y, game_item_name(item));
-
-        char amount[6];
-        int pos = 0;
-        amount[pos++] = (char)0x82;
-        amount[pos++] = (char)0xae; /* × */
-        if (qty >= 10)
-            amount[pos++] = '0' + qty / 10;
-        amount[pos++] = '0' + qty % 10;
-        amount[pos] = 0;
-        p3p_shrine_text(color, x + 130, y, amount);
-    }
+    sync_vanilla_slots(btl);
 }
