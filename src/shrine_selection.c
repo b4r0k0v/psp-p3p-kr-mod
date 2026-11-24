@@ -3,7 +3,7 @@
 enum {
     FIRST_CARD = 0x690,
     CARD_LIMIT = 0x78f,
-    PAGE_ROWS = 8,
+    PAGE_ROWS = 6,
     CARD_LOCAL = 9,
     ORDER_CARD = 93,
     ORDER_DAYS = 94,
@@ -34,6 +34,7 @@ typedef struct {
     uint32_t highlight;
     uint32_t heading;
     uint32_t controls;
+    uint32_t desc_bg;
 } ShrinePalette;
 
 _Static_assert(sizeof(Selection) <= 528, "Shrine selection exceeds its payload allocation");
@@ -51,7 +52,8 @@ extern unsigned game_bmd_count(int handle);
 extern void p3p_shrine_text(uint32_t color, int x, int y, const char *text);
 extern void p3p_shrine_bmd_text(uint32_t color, int x, int y, int handle, int message_index);
 extern void p3p_shrine_rect(uint32_t color, int x, int y, int width, int height);
-extern const char shrine_list_title[], shrine_quantity[], shrine_confirm_title[], shrine_controls[];
+extern const char shrine_list_title[], shrine_quantity[], shrine_confirm_title[],
+    shrine_list_controls[], shrine_confirm_controls[];
 
 static void refresh_cards(Selection *selection)
 {
@@ -73,6 +75,14 @@ static int finish(Selection *selection, unsigned instruction)
     return 1;
 }
 
+static char *append_uint(char *out, unsigned value)
+{
+    if (value >= 10)
+        *out++ = '0' + value / 10;
+    *out++ = '0' + value % 10;
+    return out;
+}
+
 static void draw_card(unsigned item, int y)
 {
     unsigned quantity = game_item_count(item);
@@ -80,8 +90,8 @@ static void draw_card(unsigned item, int y)
     amount[0] = quantity < 10 ? ' ' : '0' + quantity / 10;
     amount[1] = '0' + quantity % 10;
     amount[2] = 0;
-    p3p_shrine_text(0xffffffff, 117, y, game_item_name(item));
-    p3p_shrine_text(0xffffffff, 329, y, amount);
+    p3p_shrine_text(0xffffffff, 93, y, game_item_name(item));
+    p3p_shrine_text(0xffffffff, 353, y, amount);
 }
 
 static void draw_card_description(unsigned item, uint32_t color, int x, int y)
@@ -103,29 +113,44 @@ void p3p_shrine_draw_selection(void)
     const ShrinePalette *palette = &shrine_palettes[game_is_female_route() != 0];
     if (selection->confirming) {
         unsigned item = selection->cards[selection->cursor];
-        p3p_shrine_rect(palette->background, 97, 64, 286, 144);
-        p3p_shrine_text(palette->heading, 117, 77, shrine_confirm_title);
-        draw_card(item, 104);
-        draw_card_description(item, palette->controls, 117, 128);
-        p3p_shrine_text(palette->controls, 117, 178, shrine_controls);
+        p3p_shrine_rect(palette->background, 77, 58, 326, 156);
+        p3p_shrine_text(palette->heading, 93, 68, shrine_confirm_title);
+        p3p_shrine_rect(palette->highlight, 87, 94, 306, 18);
+        draw_card(item, 93);
+        p3p_shrine_rect(palette->desc_bg, 87, 118, 306, 56);
+        draw_card_description(item, palette->controls, 95, 123);
+        p3p_shrine_text(palette->controls, 93, 186, shrine_confirm_controls);
         selection->presented = 1;
         return;
     }
 
-    p3p_shrine_rect(palette->background, 97, 24, 286, 224);
-    p3p_shrine_text(palette->heading, 117, 35, shrine_list_title);
-    p3p_shrine_text(palette->heading, 325, 35, shrine_quantity);
+    p3p_shrine_rect(palette->background, 77, 14, 326, 244);
+    p3p_shrine_text(palette->heading, 93, 22, shrine_list_title);
+    p3p_shrine_text(palette->heading, 349, 22, shrine_quantity);
+    p3p_shrine_rect(palette->highlight, 87, 41, 306, 1);
     unsigned first_visible = selection->cursor / PAGE_ROWS * PAGE_ROWS;
     for (unsigned row = 0; row < PAGE_ROWS; ++row) {
         unsigned index = first_visible + row;
         if (index >= selection->count)
             break;
-        int y = 61 + row * 19;
+        int y = 46 + row * 18;
         if (index == selection->cursor)
-            p3p_shrine_rect(palette->highlight, 107, y - 3, 266, 19);
+            p3p_shrine_rect(palette->highlight, 87, y + 1, 306, 17);
         draw_card(selection->cards[index], y);
     }
-    p3p_shrine_text(palette->controls, 117, 220, shrine_controls);
+    p3p_shrine_rect(palette->desc_bg, 87, 160, 306, 62);
+    draw_card_description(selection->cards[selection->cursor], palette->controls, 95, 165);
+    p3p_shrine_text(palette->controls, 93, 232, shrine_list_controls);
+
+    unsigned total_pages = (selection->count + PAGE_ROWS - 1) / PAGE_ROWS;
+    unsigned page = selection->cursor / PAGE_ROWS + 1;
+    char page_text[8];
+    char *p = append_uint(page_text, page);
+    *p++ = '/';
+    p = append_uint(p, total_pages);
+    *p = 0;
+    int page_x = 389 - (int)(p - page_text) * 8;
+    p3p_shrine_text(palette->heading, page_x, 232, page_text);
     selection->presented = 1;
 }
 
