@@ -44,18 +44,10 @@ p3p_fusion_help_guide_hook:
     # The original branch has set the footer's coordinates, and a0 still holds its context.
     addiu $sp, $sp, -32
     sw $ra, 28($sp)
-    jal p3p_fusion_is_selecting
+    jal p3p_fusion_draw_help_guide
     nop
     beqz $v0, .Lstock_help_guide
     nop
-    lui $a3, %hi(fusion_direction)
-    addiu $a3, $a3, %lo(fusion_direction)
-    jal p3p_fusion_draw_outlined_caption
-    li $t2, 21
-    lui $a3, %hi(fusion_choose)
-    addiu $a3, $a3, %lo(fusion_choose)
-    jal p3p_fusion_draw_outlined_caption
-    li $t2, 73
     lw $ra, 28($sp)
     j game_fusion_after_help_guide
     addiu $sp, $sp, 32
@@ -67,50 +59,19 @@ p3p_fusion_help_guide_hook:
     j game_fusion_help_guide_continue
     li $a1, 16
 
-.macro draw_caption_outline dx, y
-    lw $a3, 20($sp)
-    lw $t2, 24($sp)
-    li $a0, 0xf7f5efff
-    addiu $t2, $t2, \dx
-    jal .Ldraw_caption_layer
-    li $t3, \y
-.endm
-
-.global p3p_fusion_draw_outlined_caption
-p3p_fusion_draw_outlined_caption:
-    addiu $sp, $sp, -32
-    sw $ra, 28($sp)
-    sw $t2, 24($sp)
-    sw $a3, 20($sp)
-    draw_caption_outline -1, 254
-    draw_caption_outline 1, 254
-    draw_caption_outline 0, 253
-    draw_caption_outline 0, 255
-    lw $a3, 20($sp)
-    lw $t2, 24($sp)
-    li $a0, 0x1c1c1cff
-    lw $ra, 28($sp)
-    li $t3, 254
-    addiu $sp, $sp, 32
-.Ldraw_caption_layer:
-    move $a1, $zero
-    li $a2, 1
-    mtc1 $t2, $f12
-    mtc1 $t3, $f13
-    cvt.s.w $f12, $f12
-    cvt.s.w $f13, $f13
-    mtc1 $zero, $f14
-    move $t0, $zero
-    j game_draw_text
-    move $t1, $zero
-
 # Draw words separately so the font does not draw a glyph between them.
-fusion_direction:
-    # 방향키로
-    .byte 0x8a, 0x97, 0x94, 0xb7, 0x92, 0xc9, 0x88, 0xc3, 0
-fusion_choose:
-    # 선택
-    .byte 0x8b, 0xfc, 0x92, 0xdc, 0
+.global fusion_inherit
+fusion_inherit:
+    # 계승
+    .byte 0x83, 0xcb, 0x8c, 0xeb, 0
+.global fusion_cross
+fusion_cross:
+    # ×
+    .byte 0x82, 0xae, 0
+.global fusion_prev
+fusion_prev:
+    # 이전
+    .byte 0x8f, 0x8f, 0x8f, 0xbf, 0
 
 .balign 4
 .global p3p_fusion_state

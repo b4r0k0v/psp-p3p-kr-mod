@@ -47,6 +47,10 @@ extern InheritanceState p3p_fusion_state;
 extern volatile uint32_t game_fusion_button_edges;
 extern void game_fusion_open_help(Byte *owner);
 extern void game_fusion_close_help(Byte *owner, int play_sound);
+extern int game_is_female_route(void);
+extern void p3p_shrine_rect(uint32_t color, int x, int y, int width, int height);
+extern void p3p_shrine_text(uint32_t color, int x, int y, const char *text);
+extern const char fusion_inherit[], fusion_cross[], fusion_prev[];
 
 static uint16_t read_half(const Byte *object, unsigned offset)
 {
@@ -230,9 +234,15 @@ int p3p_fusion_preview_input(Byte *context)
     }
 
     if (buttons & BUTTON_CROSS) {
-        game_fusion_close_help(owner, 0);
-        display_skills(0);
-        state->context = 0;
+        if (state->chosen > 0) {
+            state->cursor = state->selected[--state->chosen];
+            display_skills(1);
+            show_candidate_help(state);
+        } else {
+            game_fusion_close_help(owner, 0);
+            display_skills(0);
+            state->context = 0;
+        }
     } else if (buttons & BUTTON_CIRCLE) {
         state->selected[state->chosen++] = state->cursor;
         if (state->chosen == state->limit) {
@@ -262,4 +272,37 @@ int p3p_fusion_preview_input(Byte *context)
 int p3p_fusion_is_selecting(const Byte *context)
 {
     return p3p_fusion_state.context == context;
+}
+
+int p3p_fusion_draw_help_guide(const Byte *context)
+{
+    const InheritanceState *state = &p3p_fusion_state;
+    if (state->context != context)
+        return 0;
+
+    const int female = game_is_female_route() != 0;
+    const uint32_t bg = female ? 0x3b1228e0 : 0x07233fe0;
+    const uint32_t accent = female ? 0xff8ab8ff : 0x5eb8f2ff;
+    const uint32_t divider = female ? 0xff8ab888 : 0x5eb8f288;
+    const uint32_t label_color = female ? 0xffc8dfff : 0x9ce2ffff;
+    const uint32_t sub_color = female ? 0xffe2eeff : 0xd8f0ffff;
+
+    char progress[4];
+    progress[0] = '0' + state->chosen + 1;
+    progress[1] = '/';
+    progress[2] = '0' + state->limit;
+    progress[3] = 0;
+
+    const int width = state->chosen ? 125 : 74;
+    p3p_shrine_rect(bg, 21, 251, width, 18);
+    p3p_shrine_rect(accent, 21, 251, 3, 18);
+    /* Draw each token separately so 0x20 does not render as a dot glyph. */
+    p3p_shrine_text(label_color, 31, 250, fusion_inherit);
+    p3p_shrine_text(0xffffffff, 58, 250, progress);
+    if (state->chosen) {
+        p3p_shrine_rect(divider, 94, 254, 1, 12);
+        p3p_shrine_text(sub_color, 103, 250, fusion_cross);
+        p3p_shrine_text(sub_color, 116, 250, fusion_prev);
+    }
+    return 1;
 }
