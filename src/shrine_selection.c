@@ -140,7 +140,6 @@ void p3p_shrine_draw_selection(void)
     }
     p3p_shrine_rect(palette->desc_bg, 87, 160, 306, 62);
     draw_card_description(selection->cards[selection->cursor], palette->controls, 95, 165);
-    p3p_shrine_text(palette->controls, 93, 232, shrine_list_controls);
 
     unsigned total_pages = (selection->count + PAGE_ROWS - 1) / PAGE_ROWS;
     unsigned page = selection->cursor / PAGE_ROWS + 1;
@@ -149,8 +148,10 @@ void p3p_shrine_draw_selection(void)
     *p++ = '/';
     p = append_uint(p, total_pages);
     *p = 0;
-    int page_x = 389 - (int)(p - page_text) * 8;
-    p3p_shrine_text(palette->heading, page_x, 232, page_text);
+    int page_w = (int)(p - page_text) * 9 - 1;
+    int footer_x = (480 - (192 + 28 + page_w)) / 2;
+    p3p_shrine_text(palette->controls, footer_x, 232, shrine_list_controls);
+    p3p_shrine_text(palette->heading, footer_x + 192 + 28, 232, page_text);
     selection->presented = 1;
 }
 

@@ -155,7 +155,7 @@ shrine_confirm_controls:
 shrine_palettes:
     # Background, selected row, heading, controls, description box (RRGGBBAA).
     .word 0x17233ef8, 0x42577fff, 0xfdd37dff, 0xd7def1ff, 0x0d1528f0 # Male route
-    .word 0x39192ef8, 0x814364ff, 0xffc1dcff, 0xfddae9ff, 0x240e1df0 # Female route
+    .word 0x39192ef8, 0x814364ff, 0xffde66ff, 0xfddae9ff, 0x240e1df0 # Female route
 
 .global p3p_shrine_selection_state
 p3p_shrine_selection_state:
