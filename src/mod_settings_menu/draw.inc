@@ -4,7 +4,7 @@ p3p_config_draw_hook:
     bnez $t0, .Lconfig_draw
     lui $t0, %hi(menu_state)
     lw $t0, %lo(menu_state)($t0)
-    beqz $t0, .Lconfig_draw
+    beqz $t0, .Lconfig_draw_with_hint
     nop
 
     addiu $sp, $sp, -48
@@ -15,6 +15,7 @@ p3p_config_draw_hook:
     sw $s4, 12($sp)
     sw $s5, 24($sp)
     sw $ra, 44($sp)
+    sw $a1, 20($sp)
     lbu $t1, CONFIG_PALETTE_INDEX($a1)
     xori $t1, $t1, 1            # Native palette 1 is the female route.
     sltiu $t1, $t1, 1
@@ -143,6 +144,40 @@ p3p_config_draw_hook:
     bne $s0, $s1, .Ldraw_row_loop
     addiu $s2, $s2, 25
 
+    # Scroll track and thumb on the right edge of the 5-row list.
+    lw $a0, PALETTE_MUTED_VALUE($s5)
+    li $a1, 321
+    li $a2, 73
+    li $a3, 4
+    jal .Ldraw_rect_h
+    li $t0, 122
+
+    lui $t1, %hi(menu_scroll)
+    lw $t1, %lo(menu_scroll)($t1)
+    li $t2, 18
+    mul $t1, $t1, $t2
+    addiu $a2, $t1, 73
+    lw $a0, PALETTE_SELECTED_ROW($s5)
+    li $a1, 321
+    li $a3, 4
+    jal .Ldraw_rect_h
+    li $t0, 86
+
+    # Short Persona-style accent bar overlapping the first character of the description.
+    lw $a0, PALETTE_SELECTED_ROW($s5)
+    li $a1, ROW_X
+    li $a2, 221
+    li $a3, 3
+    jal .Ldraw_rect_h
+    li $t0, 18
+
+    lw $a0, PALETTE_MUTED_VALUE($s5)
+    li $a1, ROW_X + 3
+    li $a2, 221
+    li $a3, 15
+    jal .Ldraw_rect_h
+    li $t0, 18
+
     lui $t0, %hi(menu_row)
     lw $t0, %lo(menu_row)($t0)
     lui $a3, %hi(xp_description)
@@ -175,6 +210,31 @@ p3p_config_draw_hook:
     jal .Ldraw_text
     li $t3, 220
 
+    # Draw the native bottom-right PlayStation button guide sprite.
+    lw $t0, 20($sp)
+    addiu $sp, $sp, -16
+    lwc1 $f0, 0x08($t0)
+    lwc1 $f1, 0x388($t0)
+    add.s $f0, $f0, $f1
+    lui $t1, 0x4420             # 640.0f
+    mtc1 $t1, $f1
+    add.s $f0, $f0, $f1
+    swc1 $f0, 16($sp)
+    lwc1 $f0, 0x0c($t0)
+    lwc1 $f1, 0x38c($t0)
+    add.s $f0, $f0, $f1
+    lui $t1, 0x43c8             # 400.0f
+    mtc1 $t1, $f1
+    add.s $f0, $f0, $f1
+    swc1 $f0, 20($sp)
+    addiu $a0, $sp, 16
+    move $a1, $s3
+    lhu $a2, 0x34($t0)
+    lw $a3, 0x42c($t0)
+    jal game_draw_button_guide
+    mtc1 $zero, $f12
+    addiu $sp, $sp, 16
+
 .Ldraw_return:
     lw $ra, 44($sp)
     lw $s0, 32($sp)
@@ -185,6 +245,45 @@ p3p_config_draw_hook:
     lw $s5, 24($sp)
     jr $ra
     addiu $sp, $sp, 48
+
+.Lconfig_draw_with_hint:
+    addiu $sp, $sp, -32
+    sw $ra, 28($sp)
+    sw $a1, 16($sp)
+    sw $s3, 12($sp)
+    sw $s4, 8($sp)
+    sw $s5, 4($sp)
+    jal .Lconfig_draw
+    nop
+    lw $a1, 16($sp)
+    lbu $t1, CONFIG_PALETTE_INDEX($a1)
+    xori $t1, $t1, 1
+    sltiu $t1, $t1, 1
+    sll $t1, $t1, 5
+    lui $s5, %hi(menu_palettes)
+    addiu $s5, $s5, %lo(menu_palettes)
+    addu $s5, $s5, $t1
+    li $s3, 255
+    move $s4, $zero
+    lw $a0, PALETTE_SELECTED_ROW($s5)
+    li $a1, ROW_X
+    li $a2, 246
+    li $a3, 132
+    jal .Ldraw_rect_h
+    li $t0, 18
+    lui $a3, %hi(config_entry_hint)
+    addiu $a3, $a3, %lo(config_entry_hint)
+    lw $a0, PALETTE_SELECTED_TEXT($s5)
+    li $t2, ROW_X + 8
+    jal .Ldraw_text
+    li $t3, 245
+    lw $s5, 4($sp)
+    lw $s4, 8($sp)
+    lw $s3, 12($sp)
+    lw $ra, 28($sp)
+    jr $ra
+    addiu $sp, $sp, 32
+
 .Lconfig_draw:
     addiu $sp, $sp, -160
     j game_config_draw_continue

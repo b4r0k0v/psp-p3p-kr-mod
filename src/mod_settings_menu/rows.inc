@@ -47,15 +47,32 @@
     sltiu $t2, $t0, COMMUNITY_ROW
     beqz $t2, .Ldraw_toggle
     nop
+    lui $a3, %hi(mode_left_arrow)
+    addiu $a3, $a3, %lo(mode_left_arrow)
+    lw $a0, PALETTE_MUTED_VALUE($s5)
+    lw $t3, 24($sp)
+    jal .Ldraw_text
+    li $t2, VALUE_X + 3
+
+    lui $a3, %hi(mode_right_arrow)
+    addiu $a3, $a3, %lo(mode_right_arrow)
+    lw $a0, PALETTE_MUTED_VALUE($s5)
+    lw $t3, 24($sp)
+    jal .Ldraw_text
+    li $t2, VALUE_X + VALUE_WIDTH - 9
+
+    lw $t1, 8($sp)
     sltiu $t0, $t1, 5
     movz $t1, $zero, $t0
-    sll $t1, $t1, 3
+    sll $t2, $t1, 3
     lui $a3, %hi(mode_labels)
     addiu $a3, $a3, %lo(mode_labels)
-    addu $a3, $a3, $t1
+    addu $a3, $a3, $t2
     lw $a0, PALETTE_VALUE($s5)
+    lw $t0, PALETTE_MUTED_VALUE($s5)
+    movz $a0, $t0, $t1
     b .Ldraw_value
-    li $t2, VALUE_X + 16
+    li $t2, VALUE_X + 15
 
 .Ldraw_toggle:
     # Off is the right half. On is the left half.
@@ -67,6 +84,8 @@
     lw $a2, 24($sp)
     addiu $a2, $a2, -3
     lw $a0, PALETTE_VALUE($s5)
+    lw $t0, PALETTE_MUTED_VALUE($s5)
+    movn $a0, $t0, $t1
     jal .Ldraw_rect
     li $a3, VALUE_WIDTH / 2
 
@@ -93,26 +112,29 @@
     b .Ldraw_text
     addiu $sp, $sp, 32
 
-# a0 is RRGGBBAA, a1/a2 are x/y, a3 is width in pixels.
+# a0 is RRGGBBAA, a1/a2 are x/y, a3 is width in pixels, t0 is height for .Ldraw_rect_h.
 .Ldraw_rect:
+    li $t0, 22
+.Ldraw_rect_h:
     addiu $sp, $sp, -32
     sw $ra, 28($sp)
     ins $a0, $s3, 0, 8
-    wsbw $t0, $a0
-    sw $t0, 0($sp)
+    wsbw $t1, $a0
+    sw $t1, 0($sp)
     addu $a2, $a2, $s4
     mtc1 $a1, $f0
     mtc1 $a2, $f1
     mtc1 $a3, $f2
+    mtc1 $t0, $f3
     cvt.s.w $f0, $f0
     cvt.s.w $f1, $f1
     cvt.s.w $f2, $f2
+    cvt.s.w $f3, $f3
     swc1 $f0, 4($sp)
     swc1 $f1, 8($sp)
     swc1 $f2, 12($sp)
-    li $t0, 0x41b00000         # 22.0 px row height.
     jal game_prepare_rect
-    sw $t0, 16($sp)
+    swc1 $f3, 16($sp)
     move $a0, $sp
     addiu $a1, $sp, 4
     move $a2, $zero

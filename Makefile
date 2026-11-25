@@ -52,6 +52,7 @@ GAMEPLAY_SYMBOLS := \
 	--defsym game_prepare_rect=0x10cbf4 \
 	--defsym game_draw_rect=0x2a6654 \
 	--defsym game_draw_text=0x17b398 \
+	--defsym game_draw_button_guide=0x10cfb0 \
 	--defsym game_play_se=0x2b295c
 LINK_PAYLOAD := psp-ld -EL --emit-relocs --section-start=.text=0x6be000 --entry=p3p_base_xp_hook
 

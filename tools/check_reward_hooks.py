@@ -267,6 +267,15 @@ def check_menu(runner):
     push(0x4000 | 0x20)
     assert memory[state] == 3 and memory[money] == 1
     assert se_calls[-1] == (0, 0, 0, 2)
+    # SELECT closes when MENU_OPEN, and CIRCLE advances multiplier or toggles.
+    memory[state] = 2
+    memory[row] = 1
+    se_calls.clear()
+    push(0x2000)
+    assert memory[money] == 2 and se_calls == [(0, 1, 0, 5)]
+    se_calls.clear()
+    push(1)
+    assert memory[state] == 3 and se_calls == [(0, 0, 0, 2)]
     # Verify downward scroll from row 4 -> 5 -> 6.
     memory[state] = 2
     memory[row] = 4

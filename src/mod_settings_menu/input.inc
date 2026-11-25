@@ -34,7 +34,7 @@ p3p_config_input_hook:
     li $t3, MENU_OPEN
     bne $t1, $t3, .Lreturn_menu_input
     nop
-    andi $t2, $a0, CROSS
+    andi $t2, $a0, CROSS | SELECT
     bnez $t2, .Lclose_menu
     andi $t2, $a0, UP | DOWN
     lui $t3, %hi(menu_row)
@@ -76,8 +76,13 @@ p3p_config_input_hook:
     beq $t2, $t3, .Lchange_mode
     li $t0, 1
     li $t3, LEFT
-    bne $t2, $t3, .Lmaybe_cursor_se
+    beq $t2, $t3, .Lchange_mode
     li $t0, -1
+    andi $t2, $a0, CIRCLE
+    bnez $t2, .Lchange_mode
+    li $t0, 1
+    b .Lmaybe_cursor_se
+    nop
 .Lchange_mode:
     lui $t2, %hi(p3p_xp_mode)
     addiu $t2, $t2, %lo(p3p_xp_mode)
