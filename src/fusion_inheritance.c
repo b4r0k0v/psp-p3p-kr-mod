@@ -51,7 +51,8 @@ extern void game_play_se(int a0, int a1, int a2, int se_id);
 extern int game_is_female_route(void);
 extern void p3p_shrine_rect(uint32_t color, int x, int y, int width, int height);
 extern void p3p_shrine_text(uint32_t color, int x, int y, const char *text);
-extern const char fusion_inherit[], fusion_cross[], fusion_prev[];
+extern void p3p_draw_key_icon(int sprite_id, int x, int y, int scale);
+extern const char fusion_inherit[], fusion_prev[];
 
 static uint16_t read_half(const Byte *object, unsigned offset)
 {
@@ -299,7 +300,7 @@ int p3p_fusion_draw_help_guide(const Byte *context)
     progress[2] = '0' + state->limit;
     progress[3] = 0;
 
-    const int width = state->chosen ? 125 : 74;
+    const int width = state->chosen ? 128 : 74;
     p3p_shrine_rect(bg, 21, 251, width, 18);
     p3p_shrine_rect(accent, 21, 251, 3, 18);
     /* Draw each token separately so 0x20 does not render as a dot glyph. */
@@ -307,8 +308,8 @@ int p3p_fusion_draw_help_guide(const Byte *context)
     p3p_shrine_text(0xffffffff, 58, 250, progress);
     if (state->chosen) {
         p3p_shrine_rect(divider, 94, 254, 1, 12);
-        p3p_shrine_text(sub_color, 103, 250, fusion_cross);
-        p3p_shrine_text(sub_color, 116, 250, fusion_prev);
+        p3p_draw_key_icon(179, 100, 252, 0x0c00);
+        p3p_shrine_text(sub_color, 118, 250, fusion_prev);
     }
     return 1;
 }

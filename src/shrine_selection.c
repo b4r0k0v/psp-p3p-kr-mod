@@ -17,6 +17,10 @@ enum {
     BUTTON_CIRCLE = 0x2000,
     BUTTON_CROSS = 0x4000,
     INPUT_MASK = BUTTON_UP | BUTTON_DOWN | BUTTON_LEFT | BUTTON_RIGHT | BUTTON_CIRCLE | BUTTON_CROSS,
+    KEY_ICON_CIRCLE = 178,
+    KEY_ICON_CROSS = 179,
+    KEY_ICON_DPAD_LR = 454,
+    KEY_ICON_SCALE = 0x0d00,
 };
 
 typedef struct {
@@ -52,9 +56,11 @@ extern unsigned game_bmd_count(int handle);
 extern void p3p_shrine_text(uint32_t color, int x, int y, const char *text);
 extern void p3p_shrine_bmd_text(uint32_t color, int x, int y, int handle, int message_index);
 extern void p3p_shrine_rect(uint32_t color, int x, int y, int width, int height);
+extern void p3p_draw_key_icon(int sprite_id, int x, int y, int scale);
 extern void game_play_se(int a0, int a1, int a2, int se_id);
 extern const char shrine_list_title[], shrine_quantity[], shrine_confirm_title[],
-    shrine_list_controls[], shrine_confirm_controls[];
+    shrine_label_decide[], shrine_label_back[], shrine_label_page[],
+    shrine_label_deposit[], shrine_label_cancel[], shrine_label_slash[];
 
 static void refresh_cards(Selection *selection)
 {
@@ -120,7 +126,11 @@ void p3p_shrine_draw_selection(void)
         draw_card(item, 93);
         p3p_shrine_rect(palette->desc_bg, 87, 118, 306, 56);
         draw_card_description(item, palette->controls, 95, 123);
-        p3p_shrine_text(palette->controls, 93, 186, shrine_confirm_controls);
+        p3p_draw_key_icon(KEY_ICON_CIRCLE, 93, 187, KEY_ICON_SCALE);
+        p3p_shrine_text(palette->controls, 111, 186, shrine_label_deposit);
+        p3p_shrine_text(palette->controls, 149, 186, shrine_label_slash);
+        p3p_draw_key_icon(KEY_ICON_CROSS, 161, 187, KEY_ICON_SCALE);
+        p3p_shrine_text(palette->controls, 179, 186, shrine_label_cancel);
         selection->presented = 1;
         return;
     }
@@ -150,9 +160,16 @@ void p3p_shrine_draw_selection(void)
     p = append_uint(p, total_pages);
     *p = 0;
     int page_w = (int)(p - page_text) * 9 - 1;
-    int footer_x = (480 - (192 + 28 + page_w)) / 2;
-    p3p_shrine_text(palette->controls, footer_x, 232, shrine_list_controls);
-    p3p_shrine_text(palette->heading, footer_x + 192 + 28, 232, page_text);
+    int footer_x = (480 - (196 + page_w)) / 2;
+    p3p_draw_key_icon(KEY_ICON_CIRCLE, footer_x, 233, KEY_ICON_SCALE);
+    p3p_shrine_text(palette->controls, footer_x + 18, 232, shrine_label_decide);
+    p3p_shrine_text(palette->controls, footer_x + 46, 232, shrine_label_slash);
+    p3p_draw_key_icon(KEY_ICON_CROSS, footer_x + 58, 233, KEY_ICON_SCALE);
+    p3p_shrine_text(palette->controls, footer_x + 76, 232, shrine_label_back);
+    p3p_shrine_text(palette->controls, footer_x + 104, 232, shrine_label_slash);
+    p3p_draw_key_icon(KEY_ICON_DPAD_LR, footer_x + 116, 232, KEY_ICON_SCALE);
+    p3p_shrine_text(palette->controls, footer_x + 137, 232, shrine_label_page);
+    p3p_shrine_text(palette->heading, footer_x + 196, 232, page_text);
     selection->presented = 1;
 }
 

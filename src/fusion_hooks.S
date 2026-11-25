@@ -64,10 +64,6 @@ p3p_fusion_help_guide_hook:
 fusion_inherit:
     # 계승
     .byte 0x83, 0xcb, 0x8c, 0xeb, 0
-.global fusion_cross
-fusion_cross:
-    # ×
-    .byte 0x82, 0xae, 0
 .global fusion_prev
 fusion_prev:
     # 이전

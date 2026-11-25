@@ -124,6 +124,47 @@ p3p_shrine_rect:
     jr $ra
     addiu $sp, $sp, 32
 
+# sprite_id, x, y, scale (0x1000 = 1.0) using the resident c_main_01.spr sheet.
+.global p3p_draw_key_icon
+p3p_draw_key_icon:
+    addiu $sp, $sp, -48
+    sw $ra, 44($sp)
+    sw $a0, 24($sp)
+    sw $a1, 28($sp)
+    sw $a2, 32($sp)
+    sw $a3, 36($sp)
+    lui $a0, %hi(c_main_01_name)
+    jal game_find_sprite
+    addiu $a0, $a0, %lo(c_main_01_name)
+    beqz $v0, .Lkey_icon_done
+    nop
+    lw $t4, 28($sp)
+    lw $t5, 32($sp)
+    mtc1 $t4, $f12
+    mtc1 $t5, $f13
+    cvt.s.w $f12, $f12
+    cvt.s.w $f13, $f13
+    mtc1 $zero, $f14
+    mtc1 $zero, $f15
+    move $a0, $v0
+    lw $a1, 24($sp)
+    li $a2, 255
+    li $a3, 255
+    li $t0, 255
+    li $t1, 255
+    lw $t2, 36($sp)
+    move $t3, $t2
+    sw $zero, 0($sp)
+    jal game_draw_sprite
+    sw $zero, 4($sp)
+.Lkey_icon_done:
+    lw $ra, 44($sp)
+    jr $ra
+    addiu $sp, $sp, 48
+
+c_main_01_name:
+    .asciz "c_main_01.spr"
+
 .global shrine_list_title
 shrine_list_title:
     # 복제할 카드 선택
@@ -138,17 +179,29 @@ shrine_confirm_title:
     # 카드를 맡기겠습니까?
     .byte 0x91, 0xe6, 0x87, 0x9e, 0x88, 0xf9, 0x20, 0x89, 0x96, 0x84, 0xa3
     .byte 0x83, 0xbd, 0x8c, 0xe9, 0x86, 0xaa, 0x84, 0xaf, '?', 0
-.global shrine_list_controls
-shrine_list_controls:
-    # ○ 결정 / × 뒤로 / ←→ 페이지
-    .byte 0x82, 0xc2, 0x20, 0x83, 0xc4, 0x8f, 0xc5, 0x20, '/', 0x20
-    .byte 0x82, 0xae, 0x20, 0x87, 0x93, 0x88, 0xc3, 0x20, '/', 0x20
-    .byte 0x82, 0xd0, 0x82, 0xcf, 0x20, 0x93, 0xdb, 0x8f, 0x8f, 0x90, 0x97, 0
-.global shrine_confirm_controls
-shrine_confirm_controls:
-    # ○ 맡기기 / × 취소
-    .byte 0x82, 0xc2, 0x20, 0x89, 0x96, 0x84, 0xa3, 0x84, 0xa3, 0x20, '/', 0x20
-    .byte 0x82, 0xae, 0x20, 0x91, 0xc8, 0x8c, 0x9d, 0
+.global shrine_label_decide
+shrine_label_decide:
+    # 결정
+    .byte 0x83, 0xc4, 0x8f, 0xc5, 0
+.global shrine_label_back
+shrine_label_back:
+    # 뒤로
+    .byte 0x87, 0x93, 0x88, 0xc3, 0
+.global shrine_label_page
+shrine_label_page:
+    # 페이지
+    .byte 0x93, 0xdb, 0x8f, 0x8f, 0x90, 0x97, 0
+.global shrine_label_deposit
+shrine_label_deposit:
+    # 맡기기
+    .byte 0x89, 0x96, 0x84, 0xa3, 0x84, 0xa3, 0
+.global shrine_label_cancel
+shrine_label_cancel:
+    # 취소
+    .byte 0x91, 0xc8, 0x8c, 0x9d, 0
+.global shrine_label_slash
+shrine_label_slash:
+    .asciz "/"
 
 .balign 4
 .global shrine_palettes
