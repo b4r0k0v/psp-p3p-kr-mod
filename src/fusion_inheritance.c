@@ -47,6 +47,7 @@ extern InheritanceState p3p_fusion_state;
 extern volatile uint32_t game_fusion_button_edges;
 extern void game_fusion_open_help(Byte *owner);
 extern void game_fusion_close_help(Byte *owner, int play_sound);
+extern void game_play_se(int a0, int a1, int a2, int se_id);
 extern int game_is_female_route(void);
 extern void p3p_shrine_rect(uint32_t color, int x, int y, int width, int height);
 extern void p3p_shrine_text(uint32_t color, int x, int y, const char *text);
@@ -234,6 +235,7 @@ int p3p_fusion_preview_input(Byte *context)
     }
 
     if (buttons & BUTTON_CROSS) {
+        game_play_se(0, 0, 0, 2);
         if (state->chosen > 0) {
             state->cursor = state->selected[--state->chosen];
             display_skills(1);
@@ -257,11 +259,15 @@ int p3p_fusion_preview_input(Byte *context)
             state->context = 0;
             return 0;
         }
+        game_play_se(0, 0, 0, 1);
         move_cursor(1);
         display_skills(1);
         show_candidate_help(state);
     } else if (buttons & (BUTTON_LEFT | BUTTON_UP | BUTTON_RIGHT | BUTTON_DOWN)) {
+        uint8_t prev = state->cursor;
         move_cursor(buttons & (BUTTON_LEFT | BUTTON_UP) ? -1 : 1);
+        if (state->cursor != prev)
+            game_play_se(0, 1, 0, 0);
         display_skills(1);
         show_candidate_help(state);
     }

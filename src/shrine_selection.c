@@ -52,6 +52,7 @@ extern unsigned game_bmd_count(int handle);
 extern void p3p_shrine_text(uint32_t color, int x, int y, const char *text);
 extern void p3p_shrine_bmd_text(uint32_t color, int x, int y, int handle, int message_index);
 extern void p3p_shrine_rect(uint32_t color, int x, int y, int width, int height);
+extern void game_play_se(int a0, int a1, int a2, int se_id);
 extern const char shrine_list_title[], shrine_quantity[], shrine_confirm_title[],
     shrine_list_controls[], shrine_confirm_controls[];
 
@@ -157,7 +158,8 @@ void p3p_shrine_draw_selection(void)
 
 static void move_cursor(Selection *selection, unsigned input)
 {
-    int cursor = selection->cursor;
+    uint16_t prev = selection->cursor;
+    int cursor = prev;
     switch (input & (BUTTON_UP | BUTTON_DOWN | BUTTON_LEFT | BUTTON_RIGHT)) {
     case BUTTON_UP: --cursor; break;
     case BUTTON_DOWN: ++cursor; break;
@@ -170,6 +172,8 @@ static void move_cursor(Selection *selection, unsigned input)
     else if (cursor >= selection->count)
         cursor = input == BUTTON_DOWN ? 0 : selection->count - 1;
     selection->cursor = cursor;
+    if (selection->cursor != prev)
+        game_play_se(0, 1, 0, 0);
 }
 
 int p3p_shrine_choose_card(uint8_t *flow)
@@ -190,6 +194,7 @@ int p3p_shrine_choose_card(uint8_t *flow)
     unsigned input = edges & ~selection->previous_edges;
     selection->previous_edges = edges;
     if (input & BUTTON_CROSS) {
+        game_play_se(0, 0, 0, 2);
         if (!selection->confirming)
             return finish(selection, CLOSE_DIALOGUE);
         selection->confirming = 0;
@@ -199,19 +204,24 @@ int p3p_shrine_choose_card(uint8_t *flow)
     } else if (input & BUTTON_CIRCLE) {
         if (selection->confirming) {
             unsigned item = selection->cards[selection->cursor];
-            if (game_get_flow_variable(ORDER_CARD) || game_get_flow_variable(ORDER_DAYS))
+            if (game_get_flow_variable(ORDER_CARD) || game_get_flow_variable(ORDER_DAYS)) {
+                game_play_se(0, 0, 0, 2);
                 return finish(selection, CLOSE_DIALOGUE);
+            }
             if (game_item_count(item)) {
                 int32_t *locals = *(int32_t **)(flow + 0x144);
                 locals[CARD_LOCAL] = item;
+                game_play_se(0, 0, 0, 1);
                 return finish(selection, REGISTER_ORDER);
             }
+            game_play_se(0, 0, 0, 2);
             selection->confirming = 0;
             selection->presented = 0;
             refresh_cards(selection);
             if (!selection->count)
                 return finish(selection, NO_CARDS);
         } else {
+            game_play_se(0, 0, 0, 1);
             selection->confirming = 1;
             selection->presented = 0;
         }

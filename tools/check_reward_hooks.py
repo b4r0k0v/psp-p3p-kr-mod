@@ -182,9 +182,14 @@ def check_menu(runner):
         return registers[31]
 
     apply_calls = []
+    se_calls = []
 
     def apply_always_great(registers, _):
         apply_calls.append(memory[always_great])
+        return registers[31]
+
+    def play_se(registers, _):
+        se_calls.append((registers[4], registers[5], registers[6], registers[7]))
         return registers[31]
 
     def push(button):
@@ -198,6 +203,7 @@ def check_menu(runner):
     calls = {
         symbols['game_time_us']: game_time_us,
         symbols['p3p_apply_always_great']: apply_always_great,
+        symbols['game_play_se']: play_se,
     }
     row, scroll, state = symbols['menu_row'], symbols['menu_scroll'], symbols['menu_state']
     xp, money = symbols['p3p_xp_mode'], symbols['p3p_money_mode']
@@ -210,14 +216,18 @@ def check_menu(runner):
     }
 
     assert push(1) == 0x12888c and memory[row] == 0 and memory[scroll] == 0 and memory[state] == 1
+    assert se_calls == [(0, 1, 0, 3)]
+    se_calls.clear()
     push(0x20)
-    assert memory[xp] == 0
+    assert memory[xp] == 0 and se_calls == []
     memory[state] = 2
     push(0x10)
-    assert memory[row] == 6 and memory[scroll] == 2
+    assert memory[row] == 6 and memory[scroll] == 2 and se_calls == [(0, 1, 0, 0)]
+    se_calls.clear()
     push(0x20)
     assert (memory[always_great], memory[bench_xp], memory[battle_drop]) == (1, 0, 0)
-    assert apply_calls == [1]
+    assert apply_calls == [1] and se_calls == [(0, 1, 0, 5)]
+    se_calls.clear()
     push(0x20)
     assert memory[always_great] == 0 and apply_calls == [1]
     push(0x10)
@@ -256,6 +266,7 @@ def check_menu(runner):
     assert memory[row] == 1
     push(0x4000 | 0x20)
     assert memory[state] == 3 and memory[money] == 1
+    assert se_calls[-1] == (0, 0, 0, 2)
     # Verify downward scroll from row 4 -> 5 -> 6.
     memory[state] = 2
     memory[row] = 4

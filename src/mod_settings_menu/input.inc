@@ -23,8 +23,12 @@ p3p_config_input_hook:
     lui $t3, %hi(menu_scroll)
     sw $zero, %lo(menu_scroll)($t3)
     lui $t3, %hi(menu_row)
-    j game_config_input_return
     sw $zero, %lo(menu_row)($t3)
+    move $a0, $zero
+    li $a1, 1
+    move $a2, $zero
+    b .Lplay_se_and_return
+    li $a3, 3
 
 .Lmenu_input:
     li $t3, MENU_OPEN
@@ -39,6 +43,7 @@ p3p_config_input_hook:
     sltiu $t0, $t0, 1
     xori $t2, $t2, UP
     sltiu $t2, $t2, 1
+    xor $t5, $t0, $t2
     addu $t1, $t1, $t0
     subu $t1, $t1, $t2
     bgez $t1, .Lwrap_row_down
@@ -71,7 +76,7 @@ p3p_config_input_hook:
     beq $t2, $t3, .Lchange_mode
     li $t0, 1
     li $t3, LEFT
-    bne $t2, $t3, .Lreturn_menu_input
+    bne $t2, $t3, .Lmaybe_cursor_se
     li $t0, -1
 .Lchange_mode:
     lui $t2, %hi(p3p_xp_mode)
@@ -98,19 +103,38 @@ p3p_config_input_hook:
 .Lstore_mode:
     sw $t3, 0($t2)
     li $t0, ALWAYS_GREAT_ROW
-    bne $t1, $t0, .Lreturn_menu_input
+    bne $t1, $t0, .Lplay_change_se
     nop
-    beqz $t3, .Lreturn_menu_input
+    beqz $t3, .Lplay_change_se
     nop
     jal p3p_apply_always_great
+    nop
+.Lplay_change_se:
+    move $a0, $zero
+    li $a1, 1
+    move $a2, $zero
+    b .Lplay_se_and_return
+    li $a3, 5
+.Lmaybe_cursor_se:
+    beqz $t5, .Lreturn_menu_input
+    nop
+    move $a0, $zero
+    li $a1, 1
+    move $a2, $zero
+    move $a3, $zero
+.Lplay_se_and_return:
+    jal game_play_se
     nop
 .Lreturn_menu_input:
     j game_config_input_return
     nop
 .Lclose_menu:
     begin_transition MENU_CLOSING
-    j game_config_input_return
-    nop
+    move $a0, $zero
+    move $a1, $zero
+    move $a2, $zero
+    b .Lplay_se_and_return
+    li $a3, 2
 .Lconfig_input:
     j game_config_input_continue
     andi $v1, $a0, 0x2000
