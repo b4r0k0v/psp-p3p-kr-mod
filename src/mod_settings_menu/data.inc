@@ -6,7 +6,7 @@ menu_palettes:
     .word 0x003c5fff, 0x6db3ffff, 0xffc449ff, 0xace3fbff
     # Female route, burgundy with yellow value highlight.
     .word 0x6b010aff, 0xffffffff, 0x6b010aff, 0x6b010aff
-    .word 0x6b010aff, 0xfddae9ff, 0xffde00ff, 0xfddae9ff
+    .word 0x6b010aff, 0xffc1dcff, 0xffde00ff, 0xfddae9ff
 menu_state:
     .word 0
 menu_started_us:
