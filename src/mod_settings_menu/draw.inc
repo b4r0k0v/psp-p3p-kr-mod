@@ -171,20 +171,20 @@ p3p_config_draw_hook:
     jal .Ldraw_rect_h
     li $t0, 70
 
-    # Short Persona-style accent bar overlapping the first character of the description.
+    # Full-width description panel aligned with the menu rows and a 3px left accent bar.
     lw $a0, PALETTE_SELECTED_ROW($s5)
     li $a1, ROW_X
-    li $a2, 221
+    li $a2, 217
     li $a3, 3
     jal .Ldraw_rect_h
-    li $t0, 18
+    li $t0, 22
 
     lw $a0, PALETTE_MUTED_VALUE($s5)
     li $a1, ROW_X + 3
-    li $a2, 221
-    li $a3, 15
+    li $a2, 217
+    li $a3, ROW_WIDTH - 3
     jal .Ldraw_rect_h
-    li $t0, 18
+    li $t0, 22
 
     lui $t0, %hi(menu_row)
     lw $t0, %lo(menu_row)($t0)
