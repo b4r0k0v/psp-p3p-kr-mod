@@ -180,18 +180,18 @@ p3p_xp_mode:
 .global p3p_money_mode
 p3p_money_mode:
     .word 0
-.global p3p_community_affinity_zero
-p3p_community_affinity_zero:
-    .word 0
-.global p3p_shrine_wait_one_day
-p3p_shrine_wait_one_day:
+.global p3p_bench_xp
+p3p_bench_xp:
     .word 0
 .global p3p_battle_drop_100
 p3p_battle_drop_100:
     .word 0
-.global p3p_bench_xp
-p3p_bench_xp:
-    .word 0
 .global p3p_always_great
 p3p_always_great:
+    .word 0
+.global p3p_shrine_wait_one_day
+p3p_shrine_wait_one_day:
+    .word 0
+.global p3p_community_affinity_zero
+p3p_community_affinity_zero:
     .word 0

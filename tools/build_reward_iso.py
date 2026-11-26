@@ -113,9 +113,9 @@ def patch_eboot(decrypted, payload):
     symbols = mod.symbols()
     settings = symbols['p3p_reward_settings'] - PAYLOAD_ADDRESS
     setting_symbols = (
-        'p3p_xp_mode', 'p3p_money_mode', 'p3p_community_affinity_zero',
-        'p3p_shrine_wait_one_day', 'p3p_battle_drop_100',
-        'p3p_bench_xp', 'p3p_always_great',
+        'p3p_xp_mode', 'p3p_money_mode', 'p3p_bench_xp',
+        'p3p_battle_drop_100', 'p3p_always_great',
+        'p3p_shrine_wait_one_day', 'p3p_community_affinity_zero',
     )
     settings_end = settings + 8 + 4*len(setting_symbols)
     require(payload_code[settings:settings_end] == b'P3PRWD01' + bytes(4*len(setting_symbols)),

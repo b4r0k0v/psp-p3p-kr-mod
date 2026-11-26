@@ -44,7 +44,7 @@
 
     lw $t0, 20($sp)
     lw $t1, 8($sp)
-    sltiu $t2, $t0, COMMUNITY_ROW
+    sltiu $t2, $t0, FIRST_TOGGLE_ROW
     beqz $t2, .Ldraw_toggle
     nop
     lui $a3, %hi(mode_left_arrow)

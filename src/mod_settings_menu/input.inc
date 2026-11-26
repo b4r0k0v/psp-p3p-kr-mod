@@ -89,7 +89,7 @@ p3p_config_input_hook:
     sll $t3, $t1, 2
     addu $t2, $t2, $t3
     lw $t3, 0($t2)
-    sltiu $t4, $t1, COMMUNITY_ROW
+    sltiu $t4, $t1, FIRST_TOGGLE_ROW
     beqz $t4, .Ltoggle_setting
     nop
     addu $t3, $t3, $t0

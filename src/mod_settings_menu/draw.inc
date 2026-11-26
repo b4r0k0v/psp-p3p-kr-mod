@@ -117,25 +117,25 @@ p3p_config_draw_hook:
     addiu $t1, $t1, %lo(money_label)
     xori $t2, $s0, 1
     movz $a3, $t1, $t2
-    lui $t1, %hi(community_label)
-    addiu $t1, $t1, %lo(community_label)
-    xori $t2, $s0, COMMUNITY_ROW
-    movz $a3, $t1, $t2
-    lui $t1, %hi(shrine_label)
-    addiu $t1, $t1, %lo(shrine_label)
-    xori $t2, $s0, SHRINE_ROW
+    lui $t1, %hi(bench_xp_label)
+    addiu $t1, $t1, %lo(bench_xp_label)
+    xori $t2, $s0, BENCH_XP_ROW
     movz $a3, $t1, $t2
     lui $t1, %hi(battle_drop_label)
     addiu $t1, $t1, %lo(battle_drop_label)
     xori $t2, $s0, BATTLE_DROP_ROW
     movz $a3, $t1, $t2
-    lui $t1, %hi(bench_xp_label)
-    addiu $t1, $t1, %lo(bench_xp_label)
-    xori $t2, $s0, BENCH_XP_ROW
-    movz $a3, $t1, $t2
     lui $t1, %hi(always_great_label)
     addiu $t1, $t1, %lo(always_great_label)
     xori $t2, $s0, ALWAYS_GREAT_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(shrine_label)
+    addiu $t1, $t1, %lo(shrine_label)
+    xori $t2, $s0, SHRINE_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(community_label)
+    addiu $t1, $t1, %lo(community_label)
+    xori $t2, $s0, COMMUNITY_ROW
     movz $a3, $t1, $t2
     move $a0, $s0
     jal .Ldraw_row
@@ -185,25 +185,25 @@ p3p_config_draw_hook:
     lui $t1, %hi(money_description)
     addiu $t1, $t1, %lo(money_description)
     movn $a3, $t1, $t0
-    lui $t1, %hi(community_description)
-    addiu $t1, $t1, %lo(community_description)
-    xori $t2, $t0, COMMUNITY_ROW
-    movz $a3, $t1, $t2
-    lui $t1, %hi(shrine_description)
-    addiu $t1, $t1, %lo(shrine_description)
-    xori $t2, $t0, SHRINE_ROW
+    lui $t1, %hi(bench_xp_description)
+    addiu $t1, $t1, %lo(bench_xp_description)
+    xori $t2, $t0, BENCH_XP_ROW
     movz $a3, $t1, $t2
     lui $t1, %hi(battle_drop_description)
     addiu $t1, $t1, %lo(battle_drop_description)
     xori $t2, $t0, BATTLE_DROP_ROW
     movz $a3, $t1, $t2
-    lui $t1, %hi(bench_xp_description)
-    addiu $t1, $t1, %lo(bench_xp_description)
-    xori $t2, $t0, BENCH_XP_ROW
-    movz $a3, $t1, $t2
     lui $t1, %hi(always_great_description)
     addiu $t1, $t1, %lo(always_great_description)
-    xori $t0, $t0, ALWAYS_GREAT_ROW
+    xori $t2, $t0, ALWAYS_GREAT_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(shrine_description)
+    addiu $t1, $t1, %lo(shrine_description)
+    xori $t2, $t0, SHRINE_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(community_description)
+    addiu $t1, $t1, %lo(community_description)
+    xori $t0, $t0, COMMUNITY_ROW
     movz $a3, $t1, $t0
     lw $a0, PALETTE_DESCRIPTION($s5)
     li $t2, LABEL_X

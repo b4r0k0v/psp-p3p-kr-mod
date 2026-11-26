@@ -225,31 +225,32 @@ def check_menu(runner):
     assert memory[row] == 6 and memory[scroll] == 2 and se_calls == [(0, 1, 0, 0)]
     se_calls.clear()
     push(0x20)
-    assert (memory[always_great], memory[bench_xp], memory[battle_drop]) == (1, 0, 0)
-    assert apply_calls == [1] and se_calls == [(0, 1, 0, 5)]
-    se_calls.clear()
-    push(0x20)
-    assert memory[always_great] == 0 and apply_calls == [1]
-    push(0x10)
-    assert memory[row] == 5 and memory[scroll] == 2
-    push(0x20)
-    assert (memory[bench_xp], memory[battle_drop], memory[shrine]) == (1, 0, 0)
-    push(0x10)
-    assert memory[row] == 4 and memory[scroll] == 2
-    push(0x20)
-    assert (memory[battle_drop], memory[shrine]) == (1, 0)
-    push(0x10)
-    assert memory[row] == 3 and memory[scroll] == 2
-    push(0x20)
-    assert memory[shrine] == 1
-    push(0x10)
-    assert memory[row] == 2 and memory[scroll] == 2
-    push(0x20)
-    assert (memory[affinity], memory[shrine], memory[xp], memory[money]) == (1, 1, 0, 0)
+    assert (memory[affinity], memory[shrine], memory[always_great]) == (1, 0, 0)
+    assert apply_calls == [] and se_calls == [(0, 1, 0, 5)]
     push(0xa0)
     assert memory[affinity] == 1
     push(0x80)
     assert memory[affinity] == 0
+    push(0x10)
+    assert memory[row] == 5 and memory[scroll] == 2
+    push(0x20)
+    assert (memory[shrine], memory[always_great], memory[battle_drop]) == (1, 0, 0)
+    push(0x10)
+    assert memory[row] == 4 and memory[scroll] == 2
+    se_calls.clear()
+    push(0x20)
+    assert (memory[always_great], memory[battle_drop]) == (1, 0)
+    assert apply_calls == [1] and se_calls == [(0, 1, 0, 5)]
+    push(0x20)
+    assert memory[always_great] == 0 and apply_calls == [1]
+    push(0x10)
+    assert memory[row] == 3 and memory[scroll] == 2
+    push(0x20)
+    assert (memory[battle_drop], memory[bench_xp]) == (1, 0)
+    push(0x10)
+    assert memory[row] == 2 and memory[scroll] == 2
+    push(0x20)
+    assert (memory[bench_xp], memory[shrine], memory[xp], memory[money]) == (1, 1, 0, 0)
     push(0x40)
     push(0x40)
     push(0x40)
