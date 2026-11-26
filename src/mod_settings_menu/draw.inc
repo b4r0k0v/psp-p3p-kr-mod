@@ -109,7 +109,7 @@ p3p_config_draw_hook:
     lui $s0, %hi(menu_scroll)
     lw $s0, %lo(menu_scroll)($s0)
     addiu $s1, $s0, VISIBLE_ROWS
-    li $s2, 76
+    li $s2, 74
 .Ldraw_row_loop:
     lui $a3, %hi(difficulty_label)
     addiu $a3, $a3, %lo(difficulty_label)
@@ -225,7 +225,7 @@ p3p_config_draw_hook:
     lw $a0, PALETTE_DESCRIPTION($s5)
     li $t2, LABEL_X
     jal .Ldraw_text
-    li $t3, 220
+    li $t3, 218
 
     # Draw the native bottom-right PlayStation button guide sprite.
     lw $t0, 20($sp)

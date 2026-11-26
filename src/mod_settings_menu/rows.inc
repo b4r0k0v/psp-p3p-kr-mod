@@ -15,7 +15,7 @@
     lw $t2, PALETTE_SELECTED_TEXT($s5)
     movz $t1, $t2, $t0
     sw $t1, 16($sp)
-    addiu $a2, $a1, -3
+    addiu $a2, $a1, -1
     li $a1, ROW_X
     jal .Ldraw_rect
     li $a3, ROW_WIDTH
@@ -40,7 +40,7 @@
     lw $a0, PALETTE_SELECTED_ROW($s5)
     li $a1, VALUE_X
     lw $a2, 24($sp)
-    addiu $a2, $a2, -3
+    addiu $a2, $a2, -1
     jal .Ldraw_rect
     li $a3, VALUE_WIDTH
 
@@ -115,7 +115,7 @@
     movz $t2, $zero, $t1
     addiu $a1, $t2, VALUE_X
     lw $a2, 24($sp)
-    addiu $a2, $a2, -3
+    addiu $a2, $a2, -1
     lw $a0, PALETTE_VALUE($s5)
     lw $t0, PALETTE_MUTED_VALUE($s5)
     movn $a0, $t0, $t1
