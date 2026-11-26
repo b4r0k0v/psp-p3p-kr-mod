@@ -114,17 +114,33 @@ static void draw_card_description(unsigned item, uint32_t color, int x, int y)
         p3p_shrine_bmd_text(color, x, y, handle, skill);
 }
 
+void p3p_draw_panel(uint32_t bg, uint32_t border, int x, int y, int width, int height)
+{
+    p3p_shrine_rect(bg, x, y, width, height);
+    p3p_shrine_rect(border, x, y, width, 1);
+    p3p_shrine_rect(border, x, y + height - 1, width, 1);
+    p3p_shrine_rect(border, x, y + 1, 1, height - 2);
+    p3p_shrine_rect(border, x + width - 1, y + 1, 1, height - 2);
+}
+
+void p3p_draw_accent_row(uint32_t fill, uint32_t accent, int x, int y, int width, int height)
+{
+    p3p_shrine_rect(fill, x, y, width, height);
+    p3p_shrine_rect(accent, x, y, 3, height);
+}
+
 void p3p_shrine_draw_selection(void)
 {
     Selection *selection = &p3p_shrine_selection_state;
     const ShrinePalette *palette = &shrine_palettes[game_is_female_route() != 0];
     if (selection->confirming) {
         unsigned item = selection->cards[selection->cursor];
-        p3p_shrine_rect(palette->background, 77, 58, 326, 156);
+        p3p_draw_panel(palette->background, palette->highlight, 77, 58, 326, 156);
         p3p_shrine_text(palette->heading, 93, 68, shrine_confirm_title);
-        p3p_shrine_rect(palette->highlight, 87, 94, 306, 18);
+        p3p_shrine_rect(palette->highlight, 87, 87, 306, 1);
+        p3p_draw_accent_row(palette->highlight, palette->heading, 87, 94, 306, 18);
         draw_card(item, 93);
-        p3p_shrine_rect(palette->desc_bg, 87, 118, 306, 56);
+        p3p_draw_panel(palette->desc_bg, palette->highlight, 87, 118, 306, 56);
         draw_card_description(item, palette->controls, 95, 123);
         p3p_draw_key_icon(KEY_ICON_CIRCLE, 93, 187, KEY_ICON_SCALE);
         p3p_shrine_text(palette->controls, 111, 186, shrine_label_deposit);
@@ -135,7 +151,7 @@ void p3p_shrine_draw_selection(void)
         return;
     }
 
-    p3p_shrine_rect(palette->background, 77, 14, 326, 244);
+    p3p_draw_panel(palette->background, palette->highlight, 77, 14, 326, 244);
     p3p_shrine_text(palette->heading, 93, 22, shrine_list_title);
     p3p_shrine_text(palette->heading, 349, 22, shrine_quantity);
     p3p_shrine_rect(palette->highlight, 87, 41, 306, 1);
@@ -146,10 +162,10 @@ void p3p_shrine_draw_selection(void)
             break;
         int y = 46 + row * 18;
         if (index == selection->cursor)
-            p3p_shrine_rect(palette->highlight, 87, y + 1, 306, 17);
+            p3p_draw_accent_row(palette->highlight, palette->heading, 87, y + 1, 306, 17);
         draw_card(selection->cards[index], y);
     }
-    p3p_shrine_rect(palette->desc_bg, 87, 160, 306, 62);
+    p3p_draw_panel(palette->desc_bg, palette->highlight, 87, 160, 306, 62);
     draw_card_description(selection->cards[selection->cursor], palette->controls, 95, 165);
 
     unsigned total_pages = (selection->count + PAGE_ROWS - 1) / PAGE_ROWS;
