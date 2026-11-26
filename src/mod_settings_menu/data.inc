@@ -123,7 +123,7 @@ difficulty_labels:
 difficulty_x_offsets:
     .byte 17, 33, 23, 33, 21
 mode_x_offsets:
-    .byte 33, 31, 41, 41, 41
+    .byte 33, 37, 42, 42, 42
 mode_left_arrow:
     .asciz "<"
 mode_right_arrow:
