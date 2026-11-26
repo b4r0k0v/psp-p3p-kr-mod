@@ -102,7 +102,7 @@ p3p_config_draw_hook:
     sb $zero, 3($sp)
     move $a3, $sp
     lw $a0, PALETTE_TITLE($s5)
-    li $t2, VALUE_X + 38
+    li $t2, VALUE_X + VALUE_WIDTH - 30
     jal .Ldraw_text
     li $t3, 46
 
@@ -111,11 +111,15 @@ p3p_config_draw_hook:
     addiu $s1, $s0, VISIBLE_ROWS
     li $s2, 76
 .Ldraw_row_loop:
-    lui $a3, %hi(xp_label)
-    addiu $a3, $a3, %lo(xp_label)
+    lui $a3, %hi(difficulty_label)
+    addiu $a3, $a3, %lo(difficulty_label)
+    lui $t1, %hi(xp_label)
+    addiu $t1, $t1, %lo(xp_label)
+    xori $t2, $s0, XP_ROW
+    movz $a3, $t1, $t2
     lui $t1, %hi(money_label)
     addiu $t1, $t1, %lo(money_label)
-    xori $t2, $s0, 1
+    xori $t2, $s0, MONEY_ROW
     movz $a3, $t1, $t2
     lui $t1, %hi(bench_xp_label)
     addiu $t1, $t1, %lo(bench_xp_label)
@@ -150,7 +154,7 @@ p3p_config_draw_hook:
 
     # Scroll track and thumb on the right edge of the 5-row list.
     lw $a0, PALETTE_MUTED_VALUE($s5)
-    li $a1, 321
+    li $a1, SCROLLBAR_X
     li $a2, 73
     li $a3, 4
     jal .Ldraw_rect_h
@@ -158,14 +162,14 @@ p3p_config_draw_hook:
 
     lui $t1, %hi(menu_scroll)
     lw $t1, %lo(menu_scroll)($t1)
-    li $t2, 15
+    li $t2, 13
     mul $t1, $t1, $t2
     addiu $a2, $t1, 73
     lw $a0, PALETTE_SELECTED_ROW($s5)
-    li $a1, 321
+    li $a1, SCROLLBAR_X
     li $a3, 4
     jal .Ldraw_rect_h
-    li $t0, 77
+    li $t0, 70
 
     # Short Persona-style accent bar overlapping the first character of the description.
     lw $a0, PALETTE_SELECTED_ROW($s5)
@@ -184,11 +188,16 @@ p3p_config_draw_hook:
 
     lui $t0, %hi(menu_row)
     lw $t0, %lo(menu_row)($t0)
-    lui $a3, %hi(xp_description)
-    addiu $a3, $a3, %lo(xp_description)
+    lui $a3, %hi(difficulty_description)
+    addiu $a3, $a3, %lo(difficulty_description)
+    lui $t1, %hi(xp_description)
+    addiu $t1, $t1, %lo(xp_description)
+    xori $t2, $t0, XP_ROW
+    movz $a3, $t1, $t2
     lui $t1, %hi(money_description)
     addiu $t1, $t1, %lo(money_description)
-    movn $a3, $t1, $t0
+    xori $t2, $t0, MONEY_ROW
+    movz $a3, $t1, $t2
     lui $t1, %hi(bench_xp_description)
     addiu $t1, $t1, %lo(bench_xp_description)
     xori $t2, $t0, BENCH_XP_ROW

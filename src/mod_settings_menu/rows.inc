@@ -21,11 +21,19 @@
     li $a3, ROW_WIDTH
 
     lw $t0, 20($sp)
+    beqz $t0, .Lload_difficulty
+    nop
+    addiu $t0, $t0, -1
     lui $t1, %hi(p3p_xp_mode)
     addiu $t1, $t1, %lo(p3p_xp_mode)
     sll $t2, $t0, 2
     addu $t1, $t1, $t2
+    b .Lstore_row_value
     lw $t1, 0($t1)
+.Lload_difficulty:
+    lui $t1, %hi(menu_difficulty)
+    lw $t1, %lo(menu_difficulty)($t1)
+.Lstore_row_value:
     sw $t1, 8($sp)
 
     # All values use the same right-hand cell.
@@ -61,18 +69,43 @@
     jal .Ldraw_text
     li $t2, VALUE_X + VALUE_WIDTH - 9
 
+    lw $t0, 20($sp)
     lw $t1, 8($sp)
+    bnez $t0, .Ldraw_multiplier
+    nop
+    sltiu $t2, $t1, 5
+    li $t3, 2
+    movz $t1, $t3, $t2
+    sll $t2, $t1, 3
+    sll $t3, $t1, 2
+    addu $t2, $t2, $t3
+    lui $a3, %hi(difficulty_labels)
+    addiu $a3, $a3, %lo(difficulty_labels)
+    addu $a3, $a3, $t2
+    lui $t2, %hi(difficulty_x_offsets)
+    addiu $t2, $t2, %lo(difficulty_x_offsets)
+    addu $t2, $t2, $t1
+    lbu $t2, 0($t2)
+    lw $a0, PALETTE_VALUE($s5)
+    b .Ldraw_value
+    addiu $t2, $t2, VALUE_X
+
+.Ldraw_multiplier:
     sltiu $t0, $t1, 5
     movz $t1, $zero, $t0
     sll $t2, $t1, 3
     lui $a3, %hi(mode_labels)
     addiu $a3, $a3, %lo(mode_labels)
     addu $a3, $a3, $t2
+    lui $t2, %hi(mode_x_offsets)
+    addiu $t2, $t2, %lo(mode_x_offsets)
+    addu $t2, $t2, $t1
+    lbu $t2, 0($t2)
     lw $a0, PALETTE_VALUE($s5)
     lw $t0, PALETTE_MUTED_VALUE($s5)
     movz $a0, $t0, $t1
     b .Ldraw_value
-    li $t2, VALUE_X + 15
+    addiu $t2, $t2, VALUE_X
 
 .Ldraw_toggle:
     # Off is the right half. On is the left half.
@@ -97,7 +130,7 @@
     movn $a0, $t0, $t1
     lw $t3, 24($sp)
     jal .Ldraw_text
-    li $t2, VALUE_X + 7
+    li $t2, VALUE_X + 16
 
     lui $a3, %hi(toggle_labels + 4)
     addiu $a3, $a3, %lo(toggle_labels + 4)
@@ -105,7 +138,7 @@
     lw $a0, PALETTE_SELECTED_ROW($s5)
     lw $t0, PALETTE_MUTED_VALUE($s5)
     movz $a0, $t0, $t1
-    li $t2, VALUE_X + VALUE_WIDTH / 2 + 5
+    li $t2, VALUE_X + VALUE_WIDTH / 2 + 12
 .Ldraw_value:
     lw $t3, 24($sp)
     lw $ra, 28($sp)

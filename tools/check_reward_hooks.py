@@ -192,11 +192,21 @@ def check_menu(runner):
         se_calls.append((registers[4], registers[5], registers[6], registers[7]))
         return registers[31]
 
+    flags = {4891: 0, 4881: 0, 4889: 1, 4890: 0}
+
+    def flag_get(registers, _):
+        registers[2] = flags.get(registers[4], 0)
+        return registers[31]
+
+    def flag_set(registers, _):
+        flags[registers[4]] = registers[5]
+        return registers[31]
+
     def push(button):
         memory[0x110004] = button
         return runner.run(
             HOOK_SITES['p3p_config_input_hook'], {0x128858, 0x12888c},
-            {2: 0x110000, 17: 0x100000}, memory, calls,
+            {2: 0x110000, 17: 0x100000, 29: 0x180000}, memory, calls,
         )[0]
 
     symbols = runner.symbols
@@ -204,27 +214,43 @@ def check_menu(runner):
         symbols['game_time_us']: game_time_us,
         symbols['p3p_apply_always_great']: apply_always_great,
         symbols['game_play_se']: play_se,
+        symbols['game_flag_get']: flag_get,
+        symbols['game_flag_set']: flag_set,
     }
     row, scroll, state = symbols['menu_row'], symbols['menu_scroll'], symbols['menu_state']
+    difficulty = symbols['menu_difficulty']
     xp, money = symbols['p3p_xp_mode'], symbols['p3p_money_mode']
     affinity, shrine = symbols['p3p_community_affinity_zero'], symbols['p3p_shrine_wait_one_day']
     battle_drop, bench_xp = symbols['p3p_battle_drop_100'], symbols['p3p_bench_xp']
     always_great = symbols['p3p_always_great']
     inherit_type = symbols['p3p_ignore_inherit_type']
     memory = {
-        row: 2, scroll: 3, state: 0, affinity: 0, shrine: 0,
+        row: 2, scroll: 3, state: 0, difficulty: 0, affinity: 0, shrine: 0,
         battle_drop: 0, bench_xp: 0, always_great: 0, inherit_type: 0,
         xp: 0, money: 0, 0x100018: 0,
     }
 
     assert push(1) == 0x12888c and memory[row] == 0 and memory[scroll] == 0 and memory[state] == 1
-    assert se_calls == [(0, 1, 0, 3)]
+    assert memory[difficulty] == 3 and se_calls == [(0, 1, 0, 3)]
     se_calls.clear()
     push(0x20)
-    assert memory[xp] == 0 and se_calls == []
+    assert memory[difficulty] == 3 and memory[xp] == 0 and se_calls == []
     memory[state] = 2
+    push(0x20)
+    assert memory[difficulty] == 4 and flags == {4891: 0, 4881: 0, 4889: 0, 4890: 1}
+    push(0x20)
+    assert memory[difficulty] == 0 and flags == {4891: 1, 4881: 0, 4889: 0, 4890: 0}
+    push(0x80)
+    assert memory[difficulty] == 4 and flags == {4891: 0, 4881: 0, 4889: 0, 4890: 1}
+    push(0x2000)
+    assert memory[difficulty] == 0
+    push(0x20)
+    assert memory[difficulty] == 1 and flags == {4891: 0, 4881: 1, 4889: 0, 4890: 0}
+    push(0x20)
+    assert memory[difficulty] == 2 and flags == {4891: 0, 4881: 0, 4889: 0, 4890: 0}
+    se_calls.clear()
     push(0x10)
-    assert memory[row] == 7 and memory[scroll] == 3 and se_calls == [(0, 1, 0, 0)]
+    assert memory[row] == 8 and memory[scroll] == 4 and se_calls == [(0, 1, 0, 0)]
     se_calls.clear()
     push(0x20)
     assert (memory[affinity], memory[shrine], memory[always_great]) == (1, 0, 0)
@@ -234,15 +260,15 @@ def check_menu(runner):
     push(0x80)
     assert memory[affinity] == 0
     push(0x10)
-    assert memory[row] == 6 and memory[scroll] == 3
+    assert memory[row] == 7 and memory[scroll] == 4
     push(0x20)
     assert (memory[shrine], memory[inherit_type], memory[always_great]) == (1, 0, 0)
     push(0x10)
-    assert memory[row] == 5 and memory[scroll] == 3
+    assert memory[row] == 6 and memory[scroll] == 4
     push(0x20)
     assert (memory[inherit_type], memory[always_great], memory[battle_drop]) == (1, 0, 0)
     push(0x10)
-    assert memory[row] == 4 and memory[scroll] == 3
+    assert memory[row] == 5 and memory[scroll] == 4
     se_calls.clear()
     push(0x20)
     assert (memory[always_great], memory[battle_drop]) == (1, 0)
@@ -250,11 +276,11 @@ def check_menu(runner):
     push(0x20)
     assert memory[always_great] == 0 and apply_calls == [1]
     push(0x10)
-    assert memory[row] == 3 and memory[scroll] == 3
+    assert memory[row] == 4 and memory[scroll] == 4
     push(0x20)
     assert (memory[battle_drop], memory[bench_xp]) == (1, 0)
     push(0x10)
-    assert memory[row] == 2 and memory[scroll] == 2
+    assert memory[row] == 3 and memory[scroll] == 3
     push(0x20)
     assert (memory[bench_xp], memory[shrine], memory[xp], memory[money]) == (1, 1, 0, 0)
     push(0x40)
@@ -264,27 +290,29 @@ def check_menu(runner):
     push(0x40)
     push(0x40)
     assert memory[row] == 0 and memory[scroll] == 0
+    push(0x40)
+    assert memory[row] == 1 and memory[scroll] == 0
     push(0x80)
     assert memory[xp] == 4
     push(0x40)
-    assert memory[row] == 1 and memory[scroll] == 0
+    assert memory[row] == 2 and memory[scroll] == 0
     push(0x20)
     assert (memory[money], memory[xp], memory[affinity], memory[shrine]) == (1, 4, 0, 1)
     push(0x50)
-    assert memory[row] == 1
+    assert memory[row] == 2
     push(0x4000 | 0x20)
     assert memory[state] == 3 and memory[money] == 1
     assert se_calls[-1] == (0, 0, 0, 2)
     # SELECT closes when MENU_OPEN, and CIRCLE advances multiplier or toggles.
     memory[state] = 2
-    memory[row] = 1
+    memory[row] = 2
     se_calls.clear()
     push(0x2000)
     assert memory[money] == 2 and se_calls == [(0, 1, 0, 5)]
     se_calls.clear()
     push(1)
     assert memory[state] == 3 and se_calls == [(0, 0, 0, 2)]
-    # Verify downward scroll from row 4 -> 5 -> 6 -> 7.
+    # Verify downward scroll from row 4 -> 5 -> 6 -> 7 -> 8.
     memory[state] = 2
     memory[row] = 4
     memory[scroll] = 0
@@ -294,6 +322,8 @@ def check_menu(runner):
     assert memory[row] == 6 and memory[scroll] == 2
     push(0x40)
     assert memory[row] == 7 and memory[scroll] == 3
+    push(0x40)
+    assert memory[row] == 8 and memory[scroll] == 4
     memory[0x100018] = 1
     assert push(1) == 0x128858
 
