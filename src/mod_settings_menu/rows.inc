@@ -179,7 +179,6 @@
 
 .Ldraw_text:
     li $a2, 1
-.Ldraw_text_sized:
     ins $a0, $s3, 0, 8
     addu $t3, $t3, $s4
     mtc1 $t2, $f12

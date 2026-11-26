@@ -240,7 +240,7 @@ p3p_config_draw_hook:
     addiu $a3, $a3, %lo(footer_slash)
     li $t2, 327
     jal .Ldraw_outlined_text
-    li $t3, 249
+    li $t3, 251
     li $a0, KEY_ICON_CIRCLE
     li $a1, 338
     li $a2, 251
@@ -250,7 +250,7 @@ p3p_config_draw_hook:
     addiu $a3, $a3, %lo(footer_change)
     li $t2, 359
     jal .Ldraw_outlined_text
-    li $t3, 249
+    li $t3, 251
     li $a0, KEY_ICON_CROSS
     li $a1, 404
     li $a2, 251
@@ -260,7 +260,7 @@ p3p_config_draw_hook:
     addiu $a3, $a3, %lo(footer_back)
     li $t2, 425
     jal .Ldraw_outlined_text
-    li $t3, 249
+    li $t3, 251
 
 .Ldraw_return:
     lw $ra, 44($sp)
@@ -294,17 +294,15 @@ p3p_config_draw_hook:
     addu $t2, $s1, $t2
     addu $t3, $s2, $t3
     li $a0, 0xbbbbbbff
-    move $a2, $zero
-    jal .Ldraw_text_sized
+    jal .Ldraw_text
     move $a3, $s0
     addiu $s5, $s5, 2
     bne $s5, $s6, .Loutline_loop
     nop
     li $a0, 0x212121ff
-    move $a2, $zero
     move $a3, $s0
     move $t2, $s1
-    jal .Ldraw_text_sized
+    jal .Ldraw_text
     move $t3, $s2
     lw $s6, 8($sp)
     lw $s5, 12($sp)
