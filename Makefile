@@ -29,6 +29,7 @@ GAMEPLAY_SYMBOLS := \
 	--defsym game_item_name=0xb4cc \
 	--defsym game_enemy_table_ptr=0x43dbdc \
 	--defsym game_battle_state_ptr=0x43dbf8 \
+	--defsym game_camp_state_ptr=0x43ae2c \
 	--defsym game_battle_drop_continue=0x205c88 \
 	--defsym game_battle_drop_return=0x205bdc \
 	--defsym game_battle_grant_continue=0x2530b4 \

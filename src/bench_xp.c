@@ -8,9 +8,13 @@ enum {
     FUUKA_ID = 6,
     MAX_PARTY_SLOTS = 4,
     MAX_TOAST_ENTRIES = 8,
-    FADE_IN_US = 200000u,
-    HOLD_END_US = 3400000u,
-    TOTAL_US = 4000000u,
+    WARMUP_FRAMES = 20u,
+    FADE_IN_US = 250000u,
+    FADE_OUT_US = 600000u,
+    BASE_TOTAL_US = 3500000u,
+    PER_ENTRY_US = 400000u,
+    MAX_TOTAL_US = 6000000u,
+    SLIDE_PX = 12,
 };
 
 typedef struct {
@@ -24,6 +28,8 @@ typedef struct {
     uint32_t count;
     uint32_t started;
     uint32_t started_us;
+    uint32_t paused;
+    uint32_t paused_us;
     BenchToastEntry entries[MAX_TOAST_ENTRIES];
 } BenchToastState;
 
@@ -32,6 +38,7 @@ _Static_assert(sizeof(BenchToastState) <= 64, "Bench toast state exceeds allocat
 extern volatile uint32_t p3p_xp_mode;
 extern volatile BenchToastState p3p_bench_toast_state;
 extern uint8_t * volatile game_battle_state_ptr;
+extern uint8_t * volatile game_camp_state_ptr;
 extern int game_is_member_available(int char_id);
 extern uint8_t *game_companion_record(int char_id);
 extern uint32_t game_persona_level(const uint8_t *rec);
@@ -44,7 +51,8 @@ extern int game_persona_can_level_up(const uint8_t *rec);
 extern void game_persona_apply_level_up(uint8_t *rec, const uint8_t *lvlup);
 extern int game_is_female_route(void);
 extern uint32_t game_time_us(void);
-extern const uint32_t shrine_palettes[2][4];
+extern const uint32_t shrine_palettes[2][5];
+extern void p3p_draw_panel(uint32_t bg, uint32_t border, int x, int y, int width, int height);
 extern void p3p_shrine_rect(uint32_t color, int x, int y, int width, int height);
 extern void p3p_shrine_text(uint32_t color, int x, int y, const char *text);
 extern const char bench_toast_title[];
@@ -110,6 +118,7 @@ void p3p_grant_bench_xp(const uint8_t *reward_struct, const uint8_t *battle_inpu
 {
     p3p_bench_toast_state.count = 0;
     p3p_bench_toast_state.started = 0;
+    p3p_bench_toast_state.paused = 0;
 
     if (!reward_struct || !battle_input)
         return;
@@ -187,51 +196,81 @@ void p3p_draw_bench_toast(void)
     if (game_battle_state_ptr != 0)
         return;
 
-    uint32_t now = game_time_us();
-    if (!p3p_bench_toast_state.started) {
-        p3p_bench_toast_state.started = 1u;
-        p3p_bench_toast_state.started_us = now;
+    if (game_camp_state_ptr != 0) {
+        if (p3p_bench_toast_state.started > WARMUP_FRAMES && !p3p_bench_toast_state.paused) {
+            p3p_bench_toast_state.paused = 1u;
+            p3p_bench_toast_state.paused_us = game_time_us();
+        }
+        return;
     }
 
+    if (p3p_bench_toast_state.started < WARMUP_FRAMES) {
+        p3p_bench_toast_state.started = p3p_bench_toast_state.started + 1u;
+        return;
+    }
+
+    uint32_t now = game_time_us();
+    if (p3p_bench_toast_state.started == WARMUP_FRAMES) {
+        p3p_bench_toast_state.started = WARMUP_FRAMES + 1u;
+        p3p_bench_toast_state.started_us = now;
+        p3p_bench_toast_state.paused = 0u;
+    } else if (p3p_bench_toast_state.paused) {
+        p3p_bench_toast_state.started_us += now - p3p_bench_toast_state.paused_us;
+        p3p_bench_toast_state.paused = 0u;
+    }
+
+    uint32_t total_us = BASE_TOTAL_US + count * PER_ENTRY_US;
+    if (total_us > MAX_TOTAL_US)
+        total_us = MAX_TOTAL_US;
+    uint32_t hold_end_us = total_us - FADE_OUT_US;
+
     uint32_t elapsed = now - p3p_bench_toast_state.started_us;
-    if (elapsed >= TOTAL_US) {
+    if (elapsed >= total_us) {
         p3p_bench_toast_state.count = 0u;
         p3p_bench_toast_state.started = 0u;
+        p3p_bench_toast_state.paused = 0u;
         return;
     }
 
     uint32_t alpha;
     if (elapsed < FADE_IN_US)
         alpha = (elapsed * 255u) / FADE_IN_US;
-    else if (elapsed < HOLD_END_US)
+    else if (elapsed < hold_end_us)
         alpha = 255u;
     else
-        alpha = ((TOTAL_US - elapsed) * 255u) / (TOTAL_US - HOLD_END_US);
+        alpha = ((total_us - elapsed) * 255u) / FADE_OUT_US;
 
     if (alpha == 0u)
         return;
 
+    int slide_x = 0;
+    if (elapsed < FADE_IN_US)
+        slide_x = -SLIDE_PX + (int)((elapsed * (uint32_t)SLIDE_PX) / FADE_IN_US);
+
     const uint32_t *pal = shrine_palettes[game_is_female_route() != 0];
     uint32_t bg_alpha = ((pal[0] & 0xffu) * alpha) / 255u;
     uint32_t bg = (pal[0] & 0xffffff00u) | bg_alpha;
+    uint32_t border = (pal[1] & 0xffffff00u) | alpha;
     uint32_t accent_color = (pal[2] & 0xffffff00u) | alpha;
     uint32_t text_color = 0xffffff00u | alpha;
 
-    int box_w = 166;
-    int box_h = 22 + (int)count * 16;
-    int box_x = 12;
+    int box_w = 172;
+    int box_h = 26 + (int)count * 16;
+    int box_x = 12 + slide_x;
     int box_y = 10;
 
-    p3p_shrine_rect(bg, box_x, box_y, box_w, box_h);
-    p3p_shrine_text(accent_color, box_x + 8, box_y + 4, bench_toast_title);
+    p3p_draw_panel(bg, border, box_x, box_y, box_w, box_h);
+    p3p_shrine_rect(accent_color, box_x, box_y, 3, box_h);
+    p3p_shrine_text(accent_color, box_x + 10, box_y + 3, bench_toast_title);
+    p3p_shrine_rect(border, box_x + 8, box_y + 19, box_w - 16, 1);
 
     for (uint32_t i = 0; i < count; ++i) {
         uint8_t cid = p3p_bench_toast_state.entries[i].cid;
         uint8_t old_lv = p3p_bench_toast_state.entries[i].old_lv;
         uint8_t new_lv = p3p_bench_toast_state.entries[i].new_lv;
-        int y = box_y + 21 + (int)i * 16;
+        int y = box_y + 23 + (int)i * 16;
 
-        p3p_shrine_text(text_color, box_x + 8, y, p3p_bench_member_name(cid));
+        p3p_shrine_text(text_color, box_x + 10, y, p3p_bench_member_name(cid));
 
         char buf[16];
         int pos = 0;
@@ -240,12 +279,12 @@ void p3p_draw_bench_toast(void)
         buf[pos++] = '.';
         pos = append_uint(buf, pos, old_lv);
         buf[pos++] = ' ';
-        buf[pos++] = '-';
-        buf[pos++] = '>';
+        buf[pos++] = (char)0x82;
+        buf[pos++] = (char)0xcf;
         buf[pos++] = ' ';
         pos = append_uint(buf, pos, new_lv);
         buf[pos] = 0;
 
-        p3p_shrine_text(accent_color, box_x + 80, y, buf);
+        p3p_shrine_text(accent_color, box_x + 84, y, buf);
     }
 }
