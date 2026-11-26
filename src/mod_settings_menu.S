@@ -49,6 +49,11 @@
 .equ ROW_WIDTH, VALUE_X + VALUE_WIDTH - ROW_X
 .equ SCROLLBAR_X, VALUE_X + VALUE_WIDTH + 6
 
+.equ KEY_ICON_CIRCLE, 178
+.equ KEY_ICON_CROSS, 179
+.equ KEY_ICON_DPAD_LR, 454
+.equ KEY_ICON_SCALE, 0x1000
+
 # Keep the menu in one assembler unit so branch labels and data stay local.
 .text
 #include "mod_settings_menu/input.inc"

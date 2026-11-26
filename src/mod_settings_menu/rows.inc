@@ -178,6 +178,8 @@
     addiu $sp, $sp, 32
 
 .Ldraw_text:
+    li $a2, 1
+.Ldraw_text_sized:
     ins $a0, $s3, 0, 8
     addu $t3, $t3, $s4
     mtc1 $t2, $f12
@@ -186,7 +188,6 @@
     cvt.s.w $f13, $f13
     mtc1 $zero, $f14
     move $a1, $zero
-    li $a2, 1
     move $t0, $zero
     j game_draw_text
     move $t1, $zero

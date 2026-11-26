@@ -227,30 +227,40 @@ p3p_config_draw_hook:
     jal .Ldraw_text
     li $t3, 218
 
-    # Draw the native bottom-right PlayStation button guide sprite.
-    lw $t0, 20($sp)
-    addiu $sp, $sp, -16
-    lwc1 $f0, 0x08($t0)
-    lwc1 $f1, 0x388($t0)
-    add.s $f0, $f0, $f1
-    lui $t1, 0x4420             # 640.0f
-    mtc1 $t1, $f1
-    add.s $f0, $f0, $f1
-    swc1 $f0, 16($sp)
-    lwc1 $f0, 0x0c($t0)
-    lwc1 $f1, 0x38c($t0)
-    add.s $f0, $f0, $f1
-    lui $t1, 0x43c8             # 400.0f
-    mtc1 $t1, $f1
-    add.s $f0, $f0, $f1
-    swc1 $f0, 20($sp)
-    addiu $a0, $sp, 16
-    move $a1, $s3
-    lhu $a2, 0x34($t0)
-    lw $a3, 0x42c($t0)
-    jal game_draw_button_guide
-    mtc1 $zero, $f12
-    addiu $sp, $sp, 16
+    # Draw the practical bottom-right control guide: [←→]/[○] 변경  [×] 뒤로
+    li $t0, 255
+    bne $s3, $t0, .Ldraw_return
+    nop
+    li $a0, KEY_ICON_DPAD_LR
+    li $a1, 304
+    li $a2, 250
+    jal p3p_draw_key_icon
+    li $a3, KEY_ICON_SCALE
+    lui $a3, %hi(footer_slash)
+    addiu $a3, $a3, %lo(footer_slash)
+    li $t2, 327
+    jal .Ldraw_outlined_text
+    li $t3, 249
+    li $a0, KEY_ICON_CIRCLE
+    li $a1, 338
+    li $a2, 251
+    jal p3p_draw_key_icon
+    li $a3, KEY_ICON_SCALE
+    lui $a3, %hi(footer_change)
+    addiu $a3, $a3, %lo(footer_change)
+    li $t2, 359
+    jal .Ldraw_outlined_text
+    li $t3, 249
+    li $a0, KEY_ICON_CROSS
+    li $a1, 404
+    li $a2, 251
+    jal p3p_draw_key_icon
+    li $a3, KEY_ICON_SCALE
+    lui $a3, %hi(footer_back)
+    addiu $a3, $a3, %lo(footer_back)
+    li $t2, 425
+    jal .Ldraw_outlined_text
+    li $t3, 249
 
 .Ldraw_return:
     lw $ra, 44($sp)
@@ -262,6 +272,48 @@ p3p_config_draw_hook:
     lw $s5, 24($sp)
     jr $ra
     addiu $sp, $sp, 48
+
+# a3 = string, t2 = x, t3 = y
+.Ldraw_outlined_text:
+    addiu $sp, $sp, -32
+    sw $ra, 28($sp)
+    sw $s0, 24($sp)
+    sw $s1, 20($sp)
+    sw $s2, 16($sp)
+    sw $s5, 12($sp)
+    sw $s6, 8($sp)
+    move $s0, $a3
+    move $s1, $t2
+    move $s2, $t3
+    lui $s5, %hi(outline_offsets)
+    addiu $s5, $s5, %lo(outline_offsets)
+    addiu $s6, $s5, 40
+.Loutline_loop:
+    lb $t2, 0($s5)
+    lb $t3, 1($s5)
+    addu $t2, $s1, $t2
+    addu $t3, $s2, $t3
+    li $a0, 0xbbbbbbff
+    move $a2, $zero
+    jal .Ldraw_text_sized
+    move $a3, $s0
+    addiu $s5, $s5, 2
+    bne $s5, $s6, .Loutline_loop
+    nop
+    li $a0, 0x212121ff
+    move $a2, $zero
+    move $a3, $s0
+    move $t2, $s1
+    jal .Ldraw_text_sized
+    move $t3, $s2
+    lw $s6, 8($sp)
+    lw $s5, 12($sp)
+    lw $s2, 16($sp)
+    lw $s1, 20($sp)
+    lw $s0, 24($sp)
+    lw $ra, 28($sp)
+    jr $ra
+    addiu $sp, $sp, 32
 
 .Lconfig_draw_with_hint:
     addiu $sp, $sp, -32

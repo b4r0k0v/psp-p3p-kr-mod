@@ -132,3 +132,17 @@ config_entry_hint:
     # SELECT 모드 설정
     .ascii "SELECT "
     .byte 0x89, 0xc3, 0x87, 0x9e, 0x20, 0x8b, 0xfe, 0x8f, 0xc5, 0
+footer_slash:
+    .asciz "/"
+footer_change:
+    # 변경
+    .byte 0x8a, 0xbe, 0x83, 0xc9, 0
+footer_back:
+    # 뒤로
+    .byte 0x87, 0x93, 0x88, 0xc3, 0
+outline_offsets:
+    .byte -1, -2,  0, -2,  1, -2
+    .byte -2, -1, -1, -1,  0, -1,  1, -1,  2, -1
+    .byte -2,  0, -1,  0,          1,  0,  2,  0
+    .byte -2,  1, -1,  1,  0,  1,  1,  1,  2,  1
+    .byte -1,  2,  0,  2,  1,  2
