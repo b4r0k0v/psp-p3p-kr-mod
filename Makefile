@@ -74,6 +74,7 @@ $(BUILD)/%.o: src/%.c | $(BUILD)
 
 $(FUSION_HOOKS): $(OBJECTS)
 	$(LINK_PAYLOAD) $(GAMEPLAY_SYMBOLS) \
+		--defsym game_fusion_inherit_type_continue=0x5743c \
 		--defsym game_fusion_pool_cleanup=0x57714 \
 		--defsym game_fusion_pool_continue=0x57610 \
 		--defsym game_fusion_input_continue=0x4d0b4 \

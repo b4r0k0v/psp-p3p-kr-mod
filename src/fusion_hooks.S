@@ -59,6 +59,20 @@ p3p_fusion_help_guide_hook:
     j game_fusion_help_guide_continue
     li $a1, 16
 
+.global p3p_fusion_inherit_type_hook
+p3p_fusion_inherit_type_hook:
+    bgtz $v1, .Linherit_type_done
+    nop
+    lui $v0, %hi(p3p_ignore_inherit_type)
+    lw $v0, %lo(p3p_ignore_inherit_type)($v0)
+    beqz $v0, .Linherit_type_done
+    nop
+    li $v1, 100
+.Linherit_type_done:
+    sll $v0, $v1, 3
+    j game_fusion_inherit_type_continue
+    sll $v1, $v1, 1
+
 # Draw words separately so the font does not draw a glyph between them.
 .global fusion_inherit
 fusion_inherit:

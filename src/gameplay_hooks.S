@@ -189,6 +189,9 @@ p3p_battle_drop_100:
 .global p3p_always_great
 p3p_always_great:
     .word 0
+.global p3p_ignore_inherit_type
+p3p_ignore_inherit_type:
+    .word 0
 .global p3p_shrine_wait_one_day
 p3p_shrine_wait_one_day:
     .word 0

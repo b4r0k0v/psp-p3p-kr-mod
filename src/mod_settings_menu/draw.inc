@@ -129,6 +129,10 @@ p3p_config_draw_hook:
     addiu $t1, $t1, %lo(always_great_label)
     xori $t2, $s0, ALWAYS_GREAT_ROW
     movz $a3, $t1, $t2
+    lui $t1, %hi(inherit_type_label)
+    addiu $t1, $t1, %lo(inherit_type_label)
+    xori $t2, $s0, INHERIT_TYPE_ROW
+    movz $a3, $t1, $t2
     lui $t1, %hi(shrine_label)
     addiu $t1, $t1, %lo(shrine_label)
     xori $t2, $s0, SHRINE_ROW
@@ -154,14 +158,14 @@ p3p_config_draw_hook:
 
     lui $t1, %hi(menu_scroll)
     lw $t1, %lo(menu_scroll)($t1)
-    li $t2, 18
+    li $t2, 15
     mul $t1, $t1, $t2
     addiu $a2, $t1, 73
     lw $a0, PALETTE_SELECTED_ROW($s5)
     li $a1, 321
     li $a3, 4
     jal .Ldraw_rect_h
-    li $t0, 86
+    li $t0, 77
 
     # Short Persona-style accent bar overlapping the first character of the description.
     lw $a0, PALETTE_SELECTED_ROW($s5)
@@ -196,6 +200,10 @@ p3p_config_draw_hook:
     lui $t1, %hi(always_great_description)
     addiu $t1, $t1, %lo(always_great_description)
     xori $t2, $t0, ALWAYS_GREAT_ROW
+    movz $a3, $t1, $t2
+    lui $t1, %hi(inherit_type_description)
+    addiu $t1, $t1, %lo(inherit_type_description)
+    xori $t2, $t0, INHERIT_TYPE_ROW
     movz $a3, $t1, $t2
     lui $t1, %hi(shrine_description)
     addiu $t1, $t1, %lo(shrine_description)

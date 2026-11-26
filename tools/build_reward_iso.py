@@ -30,6 +30,7 @@ HOOKS = (
     (0x17998, (0x27BDFFD0, 0xAFBF0020), 'p3p_day_condition_hook'),
 )
 FUSION_HOOKS = (
+    (0x57434, (0x000310C0, 0x00031840), 'p3p_fusion_inherit_type_hook'),
     (0x57608, (0x12E00042, 0x0040A021), 'p3p_fusion_pool_hook'),
     (0x4D0AC, (0x27BDFFC0, 0xAFB10034), 'p3p_fusion_input_hook'),
     (0x542A0, (0x02402021, 0x24050010), 'p3p_fusion_help_guide_hook'),
@@ -114,7 +115,7 @@ def patch_eboot(decrypted, payload):
     settings = symbols['p3p_reward_settings'] - PAYLOAD_ADDRESS
     setting_symbols = (
         'p3p_xp_mode', 'p3p_money_mode', 'p3p_bench_xp',
-        'p3p_battle_drop_100', 'p3p_always_great',
+        'p3p_battle_drop_100', 'p3p_always_great', 'p3p_ignore_inherit_type',
         'p3p_shrine_wait_one_day', 'p3p_community_affinity_zero',
     )
     settings_end = settings + 8 + 4*len(setting_symbols)

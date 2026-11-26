@@ -6,19 +6,19 @@ from pathlib import Path
 from struct import pack_into, unpack_from
 
 from build_reward_iso import (
-    BLOCK, HOOKS, PT_LOAD, PT_PSPREL1, REL, Elf, R_MIPS_26, R_MIPS_HI16,
+    BLOCK, FUSION_HOOKS, HOOKS, PT_LOAD, PT_PSPREL1, REL, Elf, R_MIPS_26, R_MIPS_HI16,
     R_MIPS_LO16, iso_entry, iso_number, require,
 )
 
 
 MASK = 0xffffffff
-HOOK_SITES = {name: address for address, _, name in HOOKS}
+HOOK_SITES = {name: address for address, _, name in HOOKS + FUSION_HOOKS}
 TEST_SITES = {
     HOOK_SITES[name] for name in (
         'p3p_community_affinity_hook', 'p3p_config_input_hook', 'p3p_shrine_wait_hook',
         'p3p_shrine_selection_hook', 'p3p_battle_drop_hook', 'p3p_bench_xp_hook',
         'p3p_split_xp_hook', 'p3p_set_condition_hook', 'p3p_add_stamina_hook',
-        'p3p_day_condition_hook',
+        'p3p_day_condition_hook', 'p3p_fusion_inherit_type_hook',
     )
 }
 
@@ -210,9 +210,11 @@ def check_menu(runner):
     affinity, shrine = symbols['p3p_community_affinity_zero'], symbols['p3p_shrine_wait_one_day']
     battle_drop, bench_xp = symbols['p3p_battle_drop_100'], symbols['p3p_bench_xp']
     always_great = symbols['p3p_always_great']
+    inherit_type = symbols['p3p_ignore_inherit_type']
     memory = {
         row: 2, scroll: 3, state: 0, affinity: 0, shrine: 0,
-        battle_drop: 0, bench_xp: 0, always_great: 0, xp: 0, money: 0, 0x100018: 0,
+        battle_drop: 0, bench_xp: 0, always_great: 0, inherit_type: 0,
+        xp: 0, money: 0, 0x100018: 0,
     }
 
     assert push(1) == 0x12888c and memory[row] == 0 and memory[scroll] == 0 and memory[state] == 1
@@ -222,7 +224,7 @@ def check_menu(runner):
     assert memory[xp] == 0 and se_calls == []
     memory[state] = 2
     push(0x10)
-    assert memory[row] == 6 and memory[scroll] == 2 and se_calls == [(0, 1, 0, 0)]
+    assert memory[row] == 7 and memory[scroll] == 3 and se_calls == [(0, 1, 0, 0)]
     se_calls.clear()
     push(0x20)
     assert (memory[affinity], memory[shrine], memory[always_great]) == (1, 0, 0)
@@ -232,11 +234,15 @@ def check_menu(runner):
     push(0x80)
     assert memory[affinity] == 0
     push(0x10)
-    assert memory[row] == 5 and memory[scroll] == 2
+    assert memory[row] == 6 and memory[scroll] == 3
     push(0x20)
-    assert (memory[shrine], memory[always_great], memory[battle_drop]) == (1, 0, 0)
+    assert (memory[shrine], memory[inherit_type], memory[always_great]) == (1, 0, 0)
     push(0x10)
-    assert memory[row] == 4 and memory[scroll] == 2
+    assert memory[row] == 5 and memory[scroll] == 3
+    push(0x20)
+    assert (memory[inherit_type], memory[always_great], memory[battle_drop]) == (1, 0, 0)
+    push(0x10)
+    assert memory[row] == 4 and memory[scroll] == 3
     se_calls.clear()
     push(0x20)
     assert (memory[always_great], memory[battle_drop]) == (1, 0)
@@ -244,13 +250,14 @@ def check_menu(runner):
     push(0x20)
     assert memory[always_great] == 0 and apply_calls == [1]
     push(0x10)
-    assert memory[row] == 3 and memory[scroll] == 2
+    assert memory[row] == 3 and memory[scroll] == 3
     push(0x20)
     assert (memory[battle_drop], memory[bench_xp]) == (1, 0)
     push(0x10)
     assert memory[row] == 2 and memory[scroll] == 2
     push(0x20)
     assert (memory[bench_xp], memory[shrine], memory[xp], memory[money]) == (1, 1, 0, 0)
+    push(0x40)
     push(0x40)
     push(0x40)
     push(0x40)
@@ -277,7 +284,7 @@ def check_menu(runner):
     se_calls.clear()
     push(1)
     assert memory[state] == 3 and se_calls == [(0, 0, 0, 2)]
-    # Verify downward scroll from row 4 -> 5 -> 6.
+    # Verify downward scroll from row 4 -> 5 -> 6 -> 7.
     memory[state] = 2
     memory[row] = 4
     memory[scroll] = 0
@@ -285,6 +292,8 @@ def check_menu(runner):
     assert memory[row] == 5 and memory[scroll] == 1
     push(0x40)
     assert memory[row] == 6 and memory[scroll] == 2
+    push(0x40)
+    assert memory[row] == 7 and memory[scroll] == 3
     memory[0x100018] = 1
     assert push(1) == 0x128858
 
@@ -556,6 +565,20 @@ def check_condition(runner):
     assert stop == override_fn and regs[29] == stack and regs[31] == orig_ra
 
 
+def check_inherit_type(runner):
+    toggle = runner.symbols['p3p_ignore_inherit_type']
+    start = HOOK_SITES['p3p_fusion_inherit_type_hook']
+    stop_addr = 0x5743c
+    for enabled, v1, expected_v0, expected_v1 in (
+        (0, 0, 0, 0),
+        (0, 200, 1600, 400),
+        (1, 0, 800, 200),
+        (1, 200, 1600, 400),
+    ):
+        stop, regs = runner.run(start, {stop_addr}, {3: v1}, {toggle: enabled})
+        assert stop == stop_addr and regs[2] == expected_v0 and regs[3] == expected_v1
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('iso', type=Path)
@@ -575,7 +598,7 @@ def main():
         for check in (
             check_affinity, check_menu, check_shrine,
             check_shrine_selection, check_battle_drop, check_bench_xp,
-            check_split_xp, check_condition,
+            check_split_xp, check_condition, check_inherit_type,
         ):
             try:
                 check(runner)
